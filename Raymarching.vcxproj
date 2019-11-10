@@ -159,6 +159,7 @@
     <ClCompile Include="Raymarching.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".gitignore" />
     <None Include="PixelShader.glsl" />
     <None Include="VertexShader.glsl" />
   </ItemGroup>
