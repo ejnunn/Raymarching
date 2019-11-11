@@ -22,6 +22,8 @@ void Display() {
 	glBindBuffer(GL_ARRAY_BUFFER, vBuffer);			// activate vertex buffer
 	// REQUIREMENT 3B) set vertex feeder
 	
+	SetUniform(program, "iTime", 0.1f);
+
 	GLint id = glGetAttribLocation(program, "point");
 	glEnableVertexAttribArray(id);
 	glVertexAttribPointer(id, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
