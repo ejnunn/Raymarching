@@ -21,6 +21,7 @@ void Display() {
 	glUseProgram(program);							// ensure correct program
 	glBindBuffer(GL_ARRAY_BUFFER, vBuffer);			// activate vertex buffer
 	// REQUIREMENT 3B) set vertex feeder
+	
 	GLint id = glGetAttribLocation(program, "point");
 	glEnableVertexAttribArray(id);
 	glVertexAttribPointer(id, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -84,3 +85,67 @@ int main() {												// application entry
 	glfwDestroyWindow(w);
 	glfwTerminate();
 }
+
+
+// pixelshader
+//#version 130
+//out vec4 pColor;
+//bool odd(float coordinate) {
+//	return mod(coordinate, 100) < 50;
+//}
+//bool isUpperHalf(float coordinate)
+//{
+//	return coordinate > 200.f;
+//}
+//void main() {
+//	// REQUIREMENT 1B) shade pixel:									
+//	if ((odd(gl_FragCoord.x) && odd(gl_FragCoord.y))
+//		|| (!odd(gl_FragCoord.x) && !odd(gl_FragCoord.y))) {
+//		pColor = vec4(0, 0, 0, 1);
+//	}
+//	else if (isUpperHalf(gl_FragCoord.y)
+//		&& isUpperHalf(gl_FragCoord.y)) {
+//		pColor = vec4(1, 0, 0, 1);
+//	}
+//	else {
+//		pColor = vec4(1, 1, 1, 1);
+//	}
+//}
+
+// pixelshader working
+//
+//#version 130
+//#ifdef GL_ES
+//precision mediump float;
+//#endif
+//
+//uniform float u_time;
+//
+//void main() {
+//	// gl_FragColor = vec4(0.87,0.0,1.0,1.0);
+//	vec2 xy = gl_FragCoord.xy; // We obtain our coordinates for the current pixel
+//	vec4 solidRed = vec4(0, 0.0, 0.0, 1.0); // This is actually black right now
+//	if (xy.x > 300.0) {//Arbitrary number, we don't know how big our screen is!
+//		solidRed.r = 1.0;//Set its red component to 1.0
+//	}
+//	gl_FragColor = solidRed;
+//}
+//
+//#ifdef GL_ES
+//precision mediump float;
+//#endif
+//
+//float circle(in vec2 _st, in float _radius) {
+//	vec2 dist = _st - vec2(0.5);
+//	return 1. - smoothstep(_radius - (_radius * 0.01),
+//		_radius + (_radius * 0.01),
+//		dot(dist, dist) * 4.0);
+//}
+//
+//void main() {
+//	vec2 st = gl_FragCoord.xy / 400;
+//
+//	vec3 color = vec3(circle(st, 0.9));
+//
+//	gl_FragColor = vec4(color, 1.0);
+//}
