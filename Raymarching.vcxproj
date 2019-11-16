@@ -154,6 +154,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Lib\Camera.cpp" />
     <ClCompile Include="Lib\glad.c" />
     <ClCompile Include="Lib\GLXtras.cpp" />
     <ClCompile Include="Raymarching.cpp" />
