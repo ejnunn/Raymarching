@@ -33,20 +33,22 @@ void Display(GLFWwindow* w) {
 	glBindBuffer(GL_ARRAY_BUFFER, vBuffer);			// activate vertex buffer
 	float time = (clock() - start) / CLOCKS_PER_SEC;
 
+	GLint id = glGetAttribLocation(program, "point");
+	glEnableVertexAttribArray(id);
+	glVertexAttribPointer(id, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	
+	// Set camera speed
+	camera.SetSpeed(0.3f, 0.01f);
+
 	// Set window size
 	int screenWidth, screenHeight;
 	glfwGetWindowSize(w, &screenWidth, &screenHeight);
 
-	GLint id = glGetAttribLocation(program, "point");
-
-	glEnableVertexAttribArray(id);
-	glVertexAttribPointer(id, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
 	// Set vertex attribute pointers & uniforms
 	VertexAttribPointer(program, "point", 2, 0, (void *) 0);
 	SetUniform(program, "time", time);
-	SetUniform(program, "windowHeight", (float)screenWidth);
-	SetUniform(program, "windowWidth", (float)screenHeight);
+	SetUniform(program, "windowWidth", (float)screenWidth);
+	SetUniform(program, "windowHeight", (float)screenHeight);
 	glDrawArrays(GL_QUADS, 0, 4);		            // display entire window
 	glFlush();							            // flush GL ops
 }
