@@ -28,13 +28,6 @@ float cubeSDF(vec3 p) {
 }
 
 /**
- * Signed distance function for a sphere centered at the origin with radius 1.0;
- */
-float sphereSDF(vec3 p) {
-    return length(p) - 1.0;
-}
-
-/**
  * Signed distance function describing the scene.
  * 
  * Absolute value of the return value indicates the distance to the surface.
@@ -134,6 +127,8 @@ vec3 phongContribForLight(vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 eye,
     return lightIntensity * (k_d * dotLN + k_s * pow(dotRV, alpha));
 }
 
+
+
 /**
  * Lighting via Phong illumination.
  * 
@@ -191,8 +186,10 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
     );
 }
 
+
 void main()
 {
+
 	vec3 viewDir = rayDirection(45.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
     vec3 eye = vec3(8.0, 5.0, 7.0);
     
@@ -218,5 +215,5 @@ void main()
     
     vec3 color = phongIllumination(K_a, K_d, K_s, shininess, p, eye);
     
-    gl_FragColor  = vec4(color, 1.0);
+    gl_FragColor = vec4(color, 1.0);
 }
