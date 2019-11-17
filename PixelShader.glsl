@@ -56,8 +56,8 @@ float torusSDF(vec3 p1)
  * Creates multiple spheres by reusing (or instancing) objects using the modulo operation.
  */
 float multiSpheresSDF(vec3 p) {
-  p.xz = mod(p.xz, 1.0)-vec2(0.5);		// instance on xy-plane
-  return length(p)-0.3;					// sphere DE
+  p.xz = mod(p.xz, 1.5)-vec2(0.5);		// instance on xy-plane
+  return length(p)-0.5;					// sphere DE
 }
 
 
@@ -190,23 +190,15 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
     const vec3 ambientLight = 0.5 * vec3(1.0, 1.0, 1.0);
     vec3 color = ambientLight * k_a;
     
-    vec3 light1Pos = vec3(4.0 * sin(time),
-                          2.0,
-                          4.0 * cos(time));
+    vec3 light1Pos = vec3(50.0 * sin(time),
+                          50.0,
+                          50.0 * cos(time));
     vec3 light1Intensity = vec3(0.4, 0.4, 0.4);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
                                   light1Pos,
                                   light1Intensity);
-    
-    vec3 light2Pos = vec3(2.0 * sin(0.37 * time),
-                          2.0 * cos(0.37 * time),
-                          2.0);
-    vec3 light2Intensity = vec3(0.4, 0.4, 0.4);
-    
-    color += phongContribForLight(k_d, k_s, alpha, p, eye,
-                                  light2Pos,
-                                  light2Intensity);    
+  
     return color;
 }
 
@@ -234,7 +226,7 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(90.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(5.0*sin(time*0.25), 1.0, 5.0*cos(time*0.25));
+    vec3 eye = vec3(0.0, 1.0, 5.0);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     
@@ -244,11 +236,6 @@ void main()
     
     if (dist > MAX_DIST - EPSILON) {
         // Didn't hit anything
-		// ground
-		if ( viewDir.y < 0.0) {
-			gl_FragColor = vec4(0.3, 0.3, 0.3, 1.0); // dark grey
-			return;
-		}
 		// sky
         gl_FragColor = vec4(0.0, 0.0, 0.5, 0.8); // blue
 		return;
@@ -263,10 +250,10 @@ void main()
 	float shininess = 10.0;
     
 	if (hitGround) {
-		vec3 K_a = vec3(0.2, 0.2, 0.2);
-		vec3 K_d = vec3(0.2, 0.2, 0.2);
-		vec3 K_s = vec3(1.0, 1.0, 1.0);
-		float shininess = 1.0;
+		K_a = vec3(0.2, 0.2, 0.2);
+		K_d = vec3(0.2, 0.2, 0.2);
+		K_s = vec3(0.0, 0.0, 0.0);
+		shininess = 1.0;
 	}
 
     vec3 color = phongIllumination(K_a, K_d, K_s, shininess, p, eye);
