@@ -6,6 +6,7 @@ const float EPSILON = 0.0001;
 uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
+bool hitGround;
 
 /**
  * Constructive solid geometry intersection operation on SDF-calculated distances.
@@ -26,19 +27,10 @@ float intersectSDF(float distA, float distB) {
  * with width = height = length = 2.0
  */
 float cubeSDF(vec3 p) {
-    // If d.x < 0, then -1 < p.x < 1, and same logic applies to p.y, p.z
-    // So if all components of d are negative, then p is inside the unit cube
-    vec3 d = abs(p) - vec3(1.0, 1.0, 1.0);
+   // cube offset by vec3(width, height, length);
+    vec3 q = abs(p) - vec3(10.0, 0.0, 10.0);
     
-    // Assuming p is inside the cube, how far is it from the surface?
-    // Result will be negative or zero.
-    float insideDistance = min(max(d.x, max(d.y, d.z)), 0.0);
-    
-    // Assuming p is outside the cube, how far is it from the surface?
-    // Result will be positive or zero.
-    float outsideDistance = length(max(d, 0.0));
-    
-    return insideDistance + outsideDistance;
+    return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
 /**
@@ -63,20 +55,12 @@ float torusSDF(vec3 p1)
 /**
  * Creates multiple spheres by reusing (or instancing) objects using the modulo operation.
  */
-/*
-float multiSpheres(vec3 z) {
-  z.xy = mod(z, 1.0)-vec3(0.5);		// instance on xy-plane
-  return length(z)-0.3;             // sphere DE
+float multiSpheresSDF(vec3 p) {
+  p.xz = mod(p.xz, 1.0)-vec2(0.5);		// instance on xy-plane
+  return length(p)-0.3;					// sphere DE
 }
-*/
 
-/**
- * Creates a plane with a given normal vector n
- */
-float planeSDF( vec3 p, vec4 n ) {
-  // n must be normalized
-  return dot(p,n.xyz) + n.w;
-}
+
 
 /**
  * Signed distance function describing the scene.
@@ -86,9 +70,16 @@ float planeSDF( vec3 p, vec4 n ) {
  * negative indicating inside.
  */
 float sceneSDF(vec3 samplePoint) {
-	float sphereDist = sphereSDF(samplePoint - vec3(0.0, 1.0, 0.0));
-	float cubeDist = cubeSDF(samplePoint);
-	return unionSDF(sphereDist, cubeDist);
+	float groundDist = cubeSDF(samplePoint);
+	float spheresDist = multiSpheresSDF(samplePoint);
+	if (groundDist < spheresDist) {
+		hitGround = true;
+		return groundDist;
+	} else {
+		hitGround = false;
+		return spheresDist;
+	}
+
 }
 
 /**
@@ -242,8 +233,8 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 
 void main()
 {
-	vec3 viewDir = rayDirection(45.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(8.0, 5.0, 7.0);
+	vec3 viewDir = rayDirection(90.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
+    vec3 eye = vec3(5.0*sin(time*0.25), 1.0, 5.0*cos(time*0.25));
     
     mat4 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     
@@ -266,11 +257,18 @@ void main()
     // The closest point on the surface to the eyepoint along the view ray
     vec3 p = eye + dist * worldDir;
     
-    vec3 K_a = vec3(0.2, 0.2, 0.2);
-    vec3 K_d = vec3(0.7, 0.2, 0.2);
-    vec3 K_s = vec3(1.0, 1.0, 1.0);
-    float shininess = 10.0;
+	vec3 K_a = vec3(0.2, 0.2, 0.2);
+	vec3 K_d = vec3(0.7, 0.2, 0.2);
+	vec3 K_s = vec3(1.0, 1.0, 1.0);
+	float shininess = 10.0;
     
+	if (hitGround) {
+		vec3 K_a = vec3(0.2, 0.2, 0.2);
+		vec3 K_d = vec3(0.2, 0.2, 0.2);
+		vec3 K_s = vec3(1.0, 1.0, 1.0);
+		float shininess = 1.0;
+	}
+
     vec3 color = phongIllumination(K_a, K_d, K_s, shininess, p, eye);
     
     gl_FragColor = vec4(color, 1.0);
