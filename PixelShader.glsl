@@ -8,6 +8,13 @@ uniform float windowHeight;
 uniform float windowWidth;
 
 /**
+ * Constructive solid geometry intersection operation on SDF-calculated distances.
+ */
+float intersectSDF(float distA, float distB) {
+    return max(distA, distB);
+}
+
+/**
  * Signed distance function for a cube centered at the origin
  * with width = height = length = 2.0
  */
@@ -28,6 +35,13 @@ float cubeSDF(vec3 p) {
 }
 
 /**
+ * Signed distance function for a sphere centered at the origin with radius 1.0;
+ */
+float sphereSDF(vec3 p) {
+    return length(p) - 1.0;
+}
+
+/**
  * Signed distance function describing the scene.
  * 
  * Absolute value of the return value indicates the distance to the surface.
@@ -35,7 +49,9 @@ float cubeSDF(vec3 p) {
  * negative indicating inside.
  */
 float sceneSDF(vec3 samplePoint) {
-    return cubeSDF(samplePoint);
+    float cubeDist = cubeSDF(samplePoint);
+	float sphereDist = sphereSDF(samplePoint / 1.2) * 1.2;
+	return intersectSDF(cubeDist, sphereDist);
 }
 
 /**
@@ -191,7 +207,7 @@ void main()
 {
 
 	vec3 viewDir = rayDirection(45.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(8.0, 5.0, 7.0);
+    vec3 eye = vec3(8.0 * sin(time), 5.0, 7.0);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     
