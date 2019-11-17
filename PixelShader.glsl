@@ -6,6 +6,7 @@ const float EPSILON = 0.0001;
 uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
+bool hitsEarth;
 
 /**
  * Constructive solid geometry intersection operation on SDF-calculated distances.
@@ -44,8 +45,7 @@ float cubeSDF(vec3 p) {
 /**
  * Signed distance function for a sphere centered at the origin with radius 1.0
  */
-float sphereSDF(vec3 p) {
-	float radius = 1.0;
+float sphereSDF(vec3 p, float radius) {
     return length(p) - radius;
 }
 
@@ -78,6 +78,12 @@ float planeSDF( vec3 p, vec4 n ) {
   return dot(p,n.xyz) + n.w;
 }
 
+float buildingSDF(vec3 samplePoint) {
+	float sphereDist = sphereSDF(samplePoint - vec3(0.0, 1.0, 0.0), 1.0);
+	float cubeDist = cubeSDF(samplePoint);
+	return unionSDF(sphereDist, cubeDist);
+}
+
 /**
  * Signed distance function describing the scene.
  * 
@@ -86,9 +92,18 @@ float planeSDF( vec3 p, vec4 n ) {
  * negative indicating inside.
  */
 float sceneSDF(vec3 samplePoint) {
-	float sphereDist = sphereSDF(samplePoint - vec3(0.0, 1.0, 0.0));
-	float cubeDist = cubeSDF(samplePoint);
-	return unionSDF(sphereDist, cubeDist);
+	float earthRadius = 1.0;
+	float moonRadius = 0.2;
+	float earthDist = sphereSDF(samplePoint, earthRadius);
+	float moonDist = sphereSDF(samplePoint - vec3(5.0*sin(time), 0.0, 5.0*cos(time)), moonRadius);
+
+	if (earthDist < moonDist) {
+		hitsEarth = true;
+		return earthDist;
+	} else {
+		hitsEarth = false;
+		return moonDist;
+	}
 }
 
 /**
@@ -199,23 +214,15 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
     const vec3 ambientLight = 0.5 * vec3(1.0, 1.0, 1.0);
     vec3 color = ambientLight * k_a;
     
-    vec3 light1Pos = vec3(4.0 * sin(time),
-                          2.0,
-                          4.0 * cos(time));
-    vec3 light1Intensity = vec3(0.4, 0.4, 0.4);
+    vec3 sunPos = vec3(20.0 * sin(time/2),
+                          0.0,
+                          20.0 * cos(time/2));
+    vec3 sunIntensity = vec3(0.4, 0.4, 0.4);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
-                                  light1Pos,
-                                  light1Intensity);
-    
-    vec3 light2Pos = vec3(2.0 * sin(0.37 * time),
-                          2.0 * cos(0.37 * time),
-                          2.0);
-    vec3 light2Intensity = vec3(0.4, 0.4, 0.4);
-    
-    color += phongContribForLight(k_d, k_s, alpha, p, eye,
-                                  light2Pos,
-                                  light2Intensity);    
+                                  sunPos,
+                                  sunIntensity);
+								  
     return color;
 }
 
@@ -242,8 +249,8 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 
 void main()
 {
-	vec3 viewDir = rayDirection(45.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(8.0, 5.0, 7.0);
+	vec3 viewDir = rayDirection(90.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
+    vec3 eye = vec3(5.0, 3.0, 10.0);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     
@@ -251,26 +258,29 @@ void main()
     
     float dist = shortestDistanceToSurface(eye, worldDir, MIN_DIST, MAX_DIST);
     
+	
     if (dist > MAX_DIST - EPSILON) {
         // Didn't hit anything
-		// ground
-		if ( viewDir.y < 0.0) {
-			gl_FragColor = vec4(0.3, 0.3, 0.3, 1.0); // dark grey
-			return;
-		}
-		// sky
-        gl_FragColor = vec4(0.0, 0.0, 0.5, 0.8); // blue
+		// outer space
+		float daySpeed = time;
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0); // black
 		return;
     }
     
     // The closest point on the surface to the eyepoint along the view ray
     vec3 p = eye + dist * worldDir;
-    
-    vec3 K_a = vec3(0.2, 0.2, 0.2);
-    vec3 K_d = vec3(0.7, 0.2, 0.2);
-    vec3 K_s = vec3(1.0, 1.0, 1.0);
-    float shininess = 10.0;
-    
+
+	vec3 K_a = vec3(0.3, 0.3, 0.3);
+	vec3 K_d = vec3(0.2, 0.2, 0.2);
+	vec3 K_s = vec3(1.0, 1.0, 1.0);
+	float shininess = 5.0;
+
+	if (hitsEarth) {
+		K_a = vec3(0.2, 0.2, 0.4);
+		K_d = vec3(0.1, 0.2, 0.7);
+		K_s = vec3(1.0, 1.0, 1.0);
+		shininess = 10.0;
+	}
     vec3 color = phongIllumination(K_a, K_d, K_s, shininess, p, eye);
     
     gl_FragColor = vec4(color, 1.0);
