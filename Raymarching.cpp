@@ -1,35 +1,64 @@
-// Assignment 1, Chessboard - Yvonne Rogell. Seattle University, FQ 2019. 
-// CPSC 5700 - Computer Graphics. 
+// Raymarching Project - Eric Nunn, Yvonne Rogell. Seattle University, FQ 2019. 
+// CPSC 5700 - Computer Graphics
 
 #include <glad.h>							// GL header file
 #include <glfw3.h>							// GL toolkit
 #include <stdio.h>							// printf, etc.
+#include <time.h>
 #include "GLXtras.h"						// convenience routines
+#include "Camera.h"
 
 GLuint vBuffer = 0;							// GPU buf ID, valid > 0
 GLuint program = 0;						 	// shader ID, valid if > 0
+float start = clock();
+float windowWidth = 800.0;
+float windowHeight = 800.0;
+
+// Window size and camera initilization
+int winWidth = 500, winHeight = 500;
+
+// Camera parameters: screenWidth, screenHeight, rotation, translation, FOV, nearDist, farDist, invVert
+Camera camera(winWidth / 2, winHeight / 2, vec3(0, 0, 0), vec3(0, 0, -1), 10, 0.001f, 500, false);
+
 
 void InitVertexBuffer() {
-	// REQUIREMENT 3A) create GPU buffer, copy 4 vertices
 	float pts[][2] = { {-1,-1},{-1,1},{1,1},{1,-1} }; // 'object'
 	glGenBuffers(1, &vBuffer);						// ID for GPU buffer
 	glBindBuffer(GL_ARRAY_BUFFER, vBuffer);			// make it active
 	glBufferData(GL_ARRAY_BUFFER, sizeof(pts), pts, GL_STATIC_DRAW);
 }
 
-void Display() {
+void Display(GLFWwindow* w) {
 	glUseProgram(program);							// ensure correct program
 	glBindBuffer(GL_ARRAY_BUFFER, vBuffer);			// activate vertex buffer
-	// REQUIREMENT 3B) set vertex feeder
-	
+	float time = (clock() - start) / CLOCKS_PER_SEC;
+
 	GLint id = glGetAttribLocation(program, "point");
+	SetUniform(program, "time", time);
+	SetUniform(program, "windowHeight", windowHeight);
+	SetUniform(program, "windowWidth", windowWidth);
 	glEnableVertexAttribArray(id);
 	glVertexAttribPointer(id, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	//	in subsequent code we will replace the above three lines with
-	//	VertexAttribPointer(program, "point", 2, 0, (void *) 0);
+	
+	// Set camera speed
+	camera.SetSpeed(0.3f, 0.01f);
+
+	// Set window size
+	int screenWidth, screenHeight;
+	glfwGetWindowSize(w, &screenWidth, &screenHeight);
+
+	// Set vertex attribute pointers& uniforms
+	VertexAttribPointer(program, "point", 2, 0, (void *) 0);
 	glDrawArrays(GL_QUADS, 0, 4);		            // display entire window
 	glFlush();							            // flush GL ops
 }
+
+// To dynamically resize the viewport when a user resizes the application window
+void Resize(GLFWwindow* w, int width, int height) {
+	camera.Resize(width, height);
+	glViewport(0, 0, width, height);
+}
+
 
 void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)		// test for program exit
@@ -59,14 +88,14 @@ int main() {												// application entry
 	if (!glfwInit())
 		return 1;
 	// create named window of given size
-	GLFWwindow* w = glfwCreateWindow(400, 400, "Chessboard", NULL, NULL);
+	GLFWwindow* w = glfwCreateWindow(windowWidth, windowHeight, "Raymarching cityscape", NULL, NULL);
 	if (!w)
 		return AppError("can't open window");
 	glfwMakeContextCurrent(w);
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);	// set OpenGL extensions
 	// following line will not compile unless glad.h >= OpenGLv4.3
 	glDebugMessageCallback(GlslError, NULL);
-	// REQUIREMENT 2) build shader program
+	// import shaders from separate files
 	int v = CompileShaderViaFile("VertexShader.glsl", GL_VERTEX_SHADER);
 	int p = CompileShaderViaFile("PixelShader.glsl", GL_FRAGMENT_SHADER);
 
@@ -74,9 +103,12 @@ int main() {												// application entry
 	if (!(program))
 		return AppError("can't link shader program");
 	InitVertexBuffer();										// set GPU vertex memory
+	camera.SetSpeed(.01f, .001f);							// otherwise, a bit twitchy
+	glfwSetWindowSizeCallback(w, Resize);					// so can view larger window
+	glfwSwapInterval(1);
 	glfwSetKeyCallback(w, Keyboard);
 	while (!glfwWindowShouldClose(w)) {						// event loop
-		Display();
+		Display(w);
 		if (PrintGLErrors())								// test for runtime GL error
 			getchar();										// if so, pause
 		glfwSwapBuffers(w);									// double-buffer is default
@@ -85,67 +117,3 @@ int main() {												// application entry
 	glfwDestroyWindow(w);
 	glfwTerminate();
 }
-
-
-// pixelshader
-//#version 130
-//out vec4 pColor;
-//bool odd(float coordinate) {
-//	return mod(coordinate, 100) < 50;
-//}
-//bool isUpperHalf(float coordinate)
-//{
-//	return coordinate > 200.f;
-//}
-//void main() {
-//	// REQUIREMENT 1B) shade pixel:									
-//	if ((odd(gl_FragCoord.x) && odd(gl_FragCoord.y))
-//		|| (!odd(gl_FragCoord.x) && !odd(gl_FragCoord.y))) {
-//		pColor = vec4(0, 0, 0, 1);
-//	}
-//	else if (isUpperHalf(gl_FragCoord.y)
-//		&& isUpperHalf(gl_FragCoord.y)) {
-//		pColor = vec4(1, 0, 0, 1);
-//	}
-//	else {
-//		pColor = vec4(1, 1, 1, 1);
-//	}
-//}
-
-// pixelshader working
-//
-//#version 130
-//#ifdef GL_ES
-//precision mediump float;
-//#endif
-//
-//uniform float u_time;
-//
-//void main() {
-//	// gl_FragColor = vec4(0.87,0.0,1.0,1.0);
-//	vec2 xy = gl_FragCoord.xy; // We obtain our coordinates for the current pixel
-//	vec4 solidRed = vec4(0, 0.0, 0.0, 1.0); // This is actually black right now
-//	if (xy.x > 300.0) {//Arbitrary number, we don't know how big our screen is!
-//		solidRed.r = 1.0;//Set its red component to 1.0
-//	}
-//	gl_FragColor = solidRed;
-//}
-//
-//#ifdef GL_ES
-//precision mediump float;
-//#endif
-//
-//float circle(in vec2 _st, in float _radius) {
-//	vec2 dist = _st - vec2(0.5);
-//	return 1. - smoothstep(_radius - (_radius * 0.01),
-//		_radius + (_radius * 0.01),
-//		dot(dist, dist) * 4.0);
-//}
-//
-//void main() {
-//	vec2 st = gl_FragCoord.xy / 400;
-//
-//	vec3 color = vec3(circle(st, 0.9));
-//
-//	gl_FragColor = vec4(color, 1.0);
-//}
