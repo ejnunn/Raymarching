@@ -15,6 +15,13 @@ float intersectSDF(float distA, float distB) {
 }
 
 /**
+ * Constructive solid geometry union operation on SDF-calculated distances.
+ */
+ float unionSDF(float distA, float distB) {
+	return min(distA, distB);
+ }
+
+/**
  * Signed distance function for a cube centered at the origin
  * with width = height = length = 2.0
  */
@@ -35,10 +42,40 @@ float cubeSDF(vec3 p) {
 }
 
 /**
- * Signed distance function for a sphere centered at the origin with radius 1.0;
+ * Signed distance function for a sphere centered at the origin with radius 1.0
  */
 float sphereSDF(vec3 p) {
-    return length(p) - 1.0;
+	float radius = 1.0;
+    return length(p) - radius;
+}
+
+/**
+ * Creates a torus using two points
+ */
+float torusSDF(vec3 p1)
+{
+	vec3 p2 = p1 * 2;
+	vec2 q = vec2(length(p1.xz)-p2.x,p1.y);
+	return length(q)-p2.y;	// FIXME - does not seem to render object at all
+}
+
+
+/**
+ * Creates multiple spheres by reusing (or instancing) objects using the modulo operation.
+ */
+/*
+float multiSpheres(vec3 z) {
+  z.xy = mod(z, 1.0)-vec3(0.5);		// instance on xy-plane
+  return length(z)-0.3;             // sphere DE
+}
+*/
+
+/**
+ * Creates a plane with a given normal vector n
+ */
+float planeSDF( vec3 p, vec4 n ) {
+  // n must be normalized
+  return dot(p,n.xyz) + n.w;
 }
 
 /**
@@ -49,9 +86,9 @@ float sphereSDF(vec3 p) {
  * negative indicating inside.
  */
 float sceneSDF(vec3 samplePoint) {
-    float cubeDist = cubeSDF(samplePoint);
-	float sphereDist = sphereSDF(samplePoint / 1.2) * 1.2;
-	return intersectSDF(cubeDist, sphereDist);
+	float sphereDist = sphereSDF(samplePoint - vec3(0.0, 1.0, 0.0));
+	float cubeDist = cubeSDF(samplePoint);
+	return unionSDF(sphereDist, cubeDist);
 }
 
 /**
@@ -205,9 +242,8 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 
 void main()
 {
-
 	vec3 viewDir = rayDirection(45.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(8.0 * sin(time), 5.0, 7.0);
+    vec3 eye = vec3(8.0, 5.0, 7.0);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     
@@ -217,7 +253,13 @@ void main()
     
     if (dist > MAX_DIST - EPSILON) {
         // Didn't hit anything
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+		// ground
+		if ( viewDir.y < 0.0) {
+			gl_FragColor = vec4(0.3, 0.3, 0.3, 1.0); // dark grey
+			return;
+		}
+		// sky
+        gl_FragColor = vec4(0.0, 0.0, 0.5, 0.8); // blue
 		return;
     }
     
