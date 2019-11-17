@@ -34,9 +34,6 @@ void Display(GLFWwindow* w) {
 	float time = (clock() - start) / CLOCKS_PER_SEC;
 
 	GLint id = glGetAttribLocation(program, "point");
-	SetUniform(program, "time", time);
-	SetUniform(program, "windowHeight", windowHeight);
-	SetUniform(program, "windowWidth", windowWidth);
 	glEnableVertexAttribArray(id);
 	glVertexAttribPointer(id, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 	
@@ -47,8 +44,11 @@ void Display(GLFWwindow* w) {
 	int screenWidth, screenHeight;
 	glfwGetWindowSize(w, &screenWidth, &screenHeight);
 
-	// Set vertex attribute pointers& uniforms
+	// Set vertex attribute pointers & uniforms
 	VertexAttribPointer(program, "point", 2, 0, (void *) 0);
+	SetUniform(program, "time", time);
+	SetUniform(program, "windowWidth", (float)screenWidth);
+	SetUniform(program, "windowHeight", (float)screenHeight);
 	glDrawArrays(GL_QUADS, 0, 4);		            // display entire window
 	glFlush();							            // flush GL ops
 }

@@ -72,8 +72,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\yvonne.rogell\source\repos\Raymarching\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\yvonne.rogell\source\repos\Raymarching\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\ejnun\Desktop\CPSC5700\Raymarching\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\ejnun\Desktop\CPSC5700\Raymarching\Lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
