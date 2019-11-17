@@ -37,27 +37,26 @@ float cubeSDF(vec3 p) {
  * Signed distance function for a sphere centered at the origin with radius 1.0
  */
 float sphereSDF(vec3 p) {
-	float radius = 1.0;
+	float radius = 0.5;
     return length(p) - radius;
 }
 
 /**
  * Creates a torus using two points
  */
-float torusSDF(vec3 p1)
-{
-	vec3 p2 = p1 * 2;
-	vec2 q = vec2(length(p1.xz)-p2.x,p1.y);
-	return length(q)-p2.y;	// FIXME - does not seem to render object at all
+float torusSDF(vec3 p1) {
+	vec2 p2 = vec2(0.5, 0.25);
+	vec2 q = vec2(length(p1.xz)-p2.x, p1.y);
+	return length(q)-p2.y;
 }
 
 
 /**
- * Creates multiple spheres by reusing (or instancing) objects using the modulo operation.
+ * Creates multiple objects by reusing (or instancing) objects using the modulo operation.
  */
-float multiSpheresSDF(vec3 p) {
-  p.xz = mod(p.xz, 1.5)-vec2(0.5);		// instance on xy-plane
-  return length(p)-0.5;					// sphere DE
+float multiObjectSDF(vec3 p) {
+  p.xz = mod(p.xz, 2.0)-vec2(0.5);		// instance on xy-plane
+  return torusSDF(p);					// sphere DE
 }
 
 
@@ -71,13 +70,13 @@ float multiSpheresSDF(vec3 p) {
  */
 float sceneSDF(vec3 samplePoint) {
 	float groundDist = cubeSDF(samplePoint);
-	float spheresDist = multiSpheresSDF(samplePoint);
-	if (groundDist < spheresDist) {
+	float objectDist = multiObjectSDF(samplePoint);
+	if (groundDist < objectDist) {
 		hitGround = true;
 		return groundDist;
 	} else {
 		hitGround = false;
-		return spheresDist;
+		return objectDist;
 	}
 
 }
@@ -226,7 +225,7 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(90.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(0.0, 1.0, 5.0);
+    vec3 eye = vec3(0.0, 2.0, 5.0);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     
