@@ -18,19 +18,27 @@ float intersectSDF(float distA, float distB) {
 /**
  * Constructive solid geometry union operation on SDF-calculated distances.
  */
- float unionSDF(float distA, float distB) {
+float unionSDF(float distA, float distB) {
 	return min(distA, distB);
- }
+}
+
+/**
+ * Signed distance function for a cube centered at the origin
+ * with custom width, height, length
+ */
+float cubeSDF(vec3 p, float width, float height, float length) {
+	// cube offset by vec3(width, height, length);
+	vec3 q = abs(p) - vec3(width, height, length);
+    
+    return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
 
 /**
  * Signed distance function for a cube centered at the origin
  * with width = height = length = 2.0
  */
 float cubeSDF(vec3 p) {
-   // cube offset by vec3(width, height, length);
-    vec3 q = abs(p) - vec3(10.0, 0.0, 10.0);
-    
-    return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+   return cubeSDF(p, 2.0, 2.0, 2.0);
 }
 
 /**
@@ -54,12 +62,19 @@ float torusSDF(vec3 p1) {
 /**
  * Creates multiple objects by reusing (or instancing) objects using the modulo operation.
  */
-float multiObjectSDF(vec3 p) {
-  p.xz = mod(p.xz, 2.0)-vec2(0.5);		// instance on xy-plane
-  return torusSDF(p);					// sphere DE
+float multiCubeSDF(vec3 p) {
+	// mod value changes size of repeated instance, +/- value affects _____
+	p.xz = mod(p.xz, 5.0) - vec2(1.5);					// instance on xy-plane
+	return cubeSDF(p, 1.0, 3.0, 1.0) - vec3(0.25);		// rounded-cube DE
 }
 
-
+/**
+ * Creates multiple objects by reusing (or instancing) objects using the modulo operation.
+ */
+float groundSDF(vec3 p) {
+	p.xz = mod(p.xz, 2.0)-vec2(1.0);				// instance on xy-plane
+	return cubeSDF(p, 10.0, 1.0, 10.0) + 1.0;		// cube DE
+}
 
 /**
  * Signed distance function describing the scene.
@@ -69,8 +84,8 @@ float multiObjectSDF(vec3 p) {
  * negative indicating inside.
  */
 float sceneSDF(vec3 samplePoint) {
-	float groundDist = cubeSDF(samplePoint);
-	float objectDist = multiObjectSDF(samplePoint);
+	float groundDist = groundSDF(samplePoint);
+	float objectDist = multiCubeSDF(samplePoint);
 	if (groundDist < objectDist) {
 		hitGround = true;
 		return groundDist;
@@ -224,10 +239,11 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 
 void main()
 {
-	vec3 viewDir = rayDirection(90.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(0.0, 2.0, 5.0);
+	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
+	float eyeHeight = 1.0 + time/2.0;
+    vec3 eye = vec3(-0.25, clamp(eyeHeight, 1.0, 5.0), 5.0-time);
     
-    mat4 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
+    mat4 viewToWorld = viewMatrix(eye, vec3(-0.25, 3.0, 0.0 - time), vec3(0.0, 1.0, 0.0));
     
     vec3 worldDir = (viewToWorld * vec4(viewDir, 0.0)).xyz;
     
