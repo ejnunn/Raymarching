@@ -7,6 +7,7 @@ uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
 bool hitGround;
+bool hitMoon;
 
 /**
  * Constructive solid geometry intersection operation on SDF-calculated distances.
@@ -42,11 +43,17 @@ float cubeSDF(vec3 p) {
 }
 
 /**
+ * Signed distance function for a sphere with radius "r" and centered at "center"
+ */
+float sphereSDF(vec3 p, float r, vec3 center) {
+    return length(p - center) - r;
+}
+
+/**
  * Signed distance function for a sphere centered at the origin with radius 1.0
  */
 float sphereSDF(vec3 p) {
-	float radius = 0.5;
-    return length(p) - radius;
+	return sphereSDF(p, 1, vec3(0));
 }
 
 /**
@@ -63,7 +70,7 @@ float torusSDF(vec3 p1) {
  * Creates multiple objects by reusing (or instancing) objects using the modulo operation.
  */
 float multiCubeSDF(vec3 p) {
-	// mod value changes size of repeated instance, +/- value affects _____
+	// mod value changes size of repeated instance area, +/- value affects _____
 	p.xz = mod(p.xz, 5.0) - vec2(1.5);					// instance on xy-plane
 	return cubeSDF(p, 1.0, 3.0, 1.0) - vec3(0.25);		// rounded-cube DE
 }
@@ -86,11 +93,24 @@ float groundSDF(vec3 p) {
 float sceneSDF(vec3 samplePoint) {
 	float groundDist = groundSDF(samplePoint);
 	float objectDist = multiCubeSDF(samplePoint);
-	if (groundDist < objectDist) {
+	vec3 moonCenter = vec3(10.0, 20.0, -30.0-time);
+	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
+	// check if ground is closest
+	if (groundDist < objectDist && groundDist < moonDist) {
 		hitGround = true;
+		hitMoon = false;
 		return groundDist;
-	} else {
+	}
+	// check if moon is hit
+	else if (moonDist < groundDist && moonDist < objectDist) {
 		hitGround = false;
+		hitMoon = true;
+		return moonDist;
+	}
+	// otherwise building was hit
+	else {
+		hitGround = false;
+		hitMoon = false;
 		return objectDist;
 	}
 
@@ -201,18 +221,28 @@ vec3 phongContribForLight(vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 eye,
  * See https://en.wikipedia.org/wiki/Phong_reflection_model#Description
  */
 vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 eye) {
-    const vec3 ambientLight = 0.5 * vec3(1.0, 1.0, 1.0);
+    const vec3 ambientLight = 0.2 * vec3(1.0, 1.0, 1.0);
     vec3 color = ambientLight * k_a;
     
-    vec3 light1Pos = vec3(50.0 * sin(time),
-                          50.0,
-                          50.0 * cos(time));
-    vec3 light1Intensity = vec3(0.4, 0.4, 0.4);
+	// street light
+    vec3 light1Pos = vec3(0.0,
+                          2.0,
+                          time);
+    vec3 light1Intensity = vec3(0.2, 0.2, 0.2);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
                                   light1Pos,
                                   light1Intensity);
-  
+	
+	// moon light
+	vec3 light2Pos = vec3(4.0,
+                          16.0,
+                          -24.0-time);
+    vec3 light2Intensity = vec3(0.8, 0.8, 0.8);
+    
+    color += phongContribForLight(k_d, k_s, alpha, p, eye,
+                                  light2Pos,
+                                  light2Intensity);
     return color;
 }
 
@@ -240,10 +270,9 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-	float eyeHeight = 1.0 + time/2.0;
-    vec3 eye = vec3(-0.25, clamp(eyeHeight, 1.0, 5.0), 5.0-time);
+    vec3 eye = vec3(-0.75, 4.0, 15.0-time);
     
-    mat4 viewToWorld = viewMatrix(eye, vec3(-0.25, 3.0, 0.0 - time), vec3(0.0, 1.0, 0.0));
+    mat4 viewToWorld = viewMatrix(eye, vec3(-0.75, 3.0, -time), vec3(0.0, 1.0, 0.0));
     
     vec3 worldDir = (viewToWorld * vec4(viewDir, 0.0)).xyz;
     
@@ -252,24 +281,35 @@ void main()
     if (dist > MAX_DIST - EPSILON) {
         // Didn't hit anything
 		// sky
-        gl_FragColor = vec4(0.0, 0.0, 0.5, 0.8); // blue
+        gl_FragColor = vec4(0.0, 0.0, 0.2, 0.3); // blue
 		return;
     }
     
     // The closest point on the surface to the eyepoint along the view ray
     vec3 p = eye + dist * worldDir;
     
+	// object hit - default
 	vec3 K_a = vec3(0.2, 0.2, 0.2);
 	vec3 K_d = vec3(0.7, 0.2, 0.2);
 	vec3 K_s = vec3(1.0, 1.0, 1.0);
 	float shininess = 10.0;
     
+	// ground hit
 	if (hitGround) {
 		K_a = vec3(0.2, 0.2, 0.2);
 		K_d = vec3(0.2, 0.2, 0.2);
-		K_s = vec3(0.0, 0.0, 0.0);
-		shininess = 1.0;
+		K_s = vec3(0.5, 0.5, 0.5);
+		shininess = 10.0;
 	}
+
+	// moon hit
+	if (hitMoon) {
+		K_a = vec3(0.5, 0.5, 0.5);
+		K_d = vec3(1.0, 1.0, 1.0);
+		K_s = vec3(0.2, 0.2, 0.2);
+		shininess = 10.0;
+	}
+
 
     vec3 color = phongIllumination(K_a, K_d, K_s, shininess, p, eye);
     
