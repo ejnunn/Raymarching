@@ -71,7 +71,7 @@ float torusSDF(vec3 p1) {
  */
 float multiCubeSDF(vec3 p) {
 	// mod value changes size of repeated instance area, +/- value affects _____
-	p.xz = mod(p.xz, 5.0) - vec2(1.5);					// instance on xy-plane
+	p.xz = mod(p.xz, 5.0) - vec2(2.5);					// instance on xy-plane
 	return cubeSDF(p, 1.0, 3.0, 1.0) - vec3(0.25);		// rounded-cube DE
 }
 
@@ -270,9 +270,9 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(-0.75, 4.0, 15.0-time);
+    vec3 eye = vec3(-0.25, 4.0, 15.0-time);
     
-    mat4 viewToWorld = viewMatrix(eye, vec3(-0.75, 3.0, -time), vec3(0.0, 1.0, 0.0));
+    mat4 viewToWorld = viewMatrix(eye, vec3(-0.25, 3.0, -time), vec3(0.0, 1.0, 0.0));
     
     vec3 worldDir = (viewToWorld * vec4(viewDir, 0.0)).xyz;
     
@@ -290,14 +290,14 @@ void main()
     
 	// object hit - default
 	vec3 K_a = vec3(0.2, 0.2, 0.2);
-	vec3 K_d = vec3(0.7, 0.2, 0.2);
+	vec3 K_d = vec3(0.7, 0.2, 0.2); // red
 	vec3 K_s = vec3(1.0, 1.0, 1.0);
 	float shininess = 10.0;
     
 	// ground hit
 	if (hitGround) {
 		K_a = vec3(0.2, 0.2, 0.2);
-		K_d = vec3(0.2, 0.2, 0.2);
+		K_d = vec3(0.2, 0.2, 0.2); // dark grey
 		K_s = vec3(0.5, 0.5, 0.5);
 		shininess = 10.0;
 	}
@@ -305,7 +305,7 @@ void main()
 	// moon hit
 	if (hitMoon) {
 		K_a = vec3(0.5, 0.5, 0.5);
-		K_d = vec3(1.0, 1.0, 1.0);
+		K_d = vec3(1.0, 1.0, 1.0); // white
 		K_s = vec3(0.2, 0.2, 0.2);
 		shininess = 10.0;
 	}
