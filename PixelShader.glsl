@@ -79,7 +79,9 @@ float planeSDF( vec3 p, vec4 n ) {
  float nodeSDF(vec3 p) {
 	float object1Dist = sphereSDF(p, 1.25, vec3(0, 0, 0));
 	float object2Dist = cubeSDF(p);
-	return differenceSDF(object2Dist, object1Dist);
+	float matrixDist =  differenceSDF(object2Dist, object1Dist);
+	float styleDist = sphereSDF(p, .1, vec3(0));
+	return unionSDF(matrixDist, styleDist);
 }
 
 /**
@@ -99,7 +101,11 @@ float multiNodesSDF(vec3 p) {
  * negative indicating inside.
  */
 float sceneSDF(vec3 samplePoint) {
-	return (1+sin(time/4))*multiNodesSDF(samplePoint);
+	float matrixDist = multiNodesSDF(samplePoint);
+	//float centerPoint = sphereSDF(samplePoint, 0.1, vec3(1, 1, 1));
+	
+	//return min(matrixDist, centerPoint);
+	return matrixDist;
 }
 
 /**
@@ -210,23 +216,17 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
     const vec3 ambientLight = 0.5 * vec3(1.0, 1.0, 1.0);
     vec3 color = ambientLight * k_a;
     
-    vec3 light1Pos = vec3(4.0 * sin(time),
-                          2.0,
-                          4.0 * cos(time));
-    vec3 light1Intensity = vec3(0.4, 0.4, 0.4);
-    
-    color += phongContribForLight(k_d, k_s, alpha, p, eye,
-                                  light1Pos,
-                                  light1Intensity);
-    
-    vec3 light2Pos = vec3(2.0 * sin(0.37 * time),
-                          2.0 * cos(0.37 * time),
-                          2.0);
-    vec3 light2Intensity = vec3(0.4, 0.4, 0.4);
-    
-    color += phongContribForLight(k_d, k_s, alpha, p, eye,
-                                  light2Pos,
-                                  light2Intensity);    
+	// center light
+	vec3 light1Pos = vec3(1.2, 1.2, 1.2);
+	vec3 light1Intensity = vec3(0.5, 0.9, 0.9);
+	color += phongContribForLight(k_d, k_s, alpha, p, eye, light1Pos, light1Intensity);
+
+	// moving lights
+	for (int i = 0; i < 4; i++) {
+		vec3 light1Pos = vec3(-mod(i*time, 50), 1.0, -mod(i*time, 25));
+		vec3 light1Intensity = vec3(0.8, 0.8, 0.8);
+		color += phongContribForLight(k_d, k_s, alpha, p, eye, light1Pos, light1Intensity);
+    }
     return color;
 }
 
@@ -254,9 +254,9 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(45.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(1.0, 1.0, 30.0);
+    vec3 eye = vec3(1.2, 1.2, 20.0-time);
     
-    mat4 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
+    mat4 viewToWorld = viewMatrix(eye, vec3(1.0, 1.0, 1-time), vec3(0.0, 1.0, 0.0));
     
     vec3 worldDir = (viewToWorld * vec4(viewDir, 0.0)).xyz;
     
