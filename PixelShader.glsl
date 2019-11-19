@@ -21,6 +21,13 @@ float intersectSDF(float distA, float distB) {
 	return min(distA, distB);
  }
 
+ /**
+ * Constructive solid geometry difference operation on SDF-calculated distances.
+ */
+ float differenceSDF(float distA, float distB) {
+	return max(distA, -distB);
+ }
+
 /**
  * Signed distance function for a cube centered at the origin
  * with width = height = length = 2.0
@@ -44,9 +51,8 @@ float cubeSDF(vec3 p) {
 /**
  * Signed distance function for a sphere centered at the origin with radius 1.0
  */
-float sphereSDF(vec3 p) {
-	float radius = 1.0;
-    return length(p) - radius;
+float sphereSDF(vec3 p, float r, vec3 centerP) {
+    return length(p - centerP) - r;
 }
 
 /**
@@ -59,17 +65,6 @@ float torusSDF(vec3 p1)
 	return length(q)-p2.y;	// FIXME - does not seem to render object at all
 }
 
-
-/**
- * Creates multiple spheres by reusing (or instancing) objects using the modulo operation.
- */
-/*
-float multiSpheres(vec3 z) {
-  z.xy = mod(z, 1.0)-vec3(0.5);		// instance on xy-plane
-  return length(z)-0.3;             // sphere DE
-}
-*/
-
 /**
  * Creates a plane with a given normal vector n
  */
@@ -79,6 +74,24 @@ float planeSDF( vec3 p, vec4 n ) {
 }
 
 /**
+ * Creates one instance of a unique shape
+ */
+ float nodeSDF(vec3 p) {
+	float object1Dist = sphereSDF(p, 1.25, vec3(0, 0, 0));
+	float object2Dist = cubeSDF(p);
+	return differenceSDF(object2Dist, object1Dist);
+}
+
+/**
+ * Creates multiple spheres by reusing (or instancing) objects using the modulo operation.
+ */
+float multiNodesSDF(vec3 p) {
+  p.xyz = mod(p.xyz, 2.0)-vec3(1);		// instance on xyz-plane
+  return nodeSDF(p);             // node distance estimate
+}
+
+
+/**
  * Signed distance function describing the scene.
  * 
  * Absolute value of the return value indicates the distance to the surface.
@@ -86,9 +99,7 @@ float planeSDF( vec3 p, vec4 n ) {
  * negative indicating inside.
  */
 float sceneSDF(vec3 samplePoint) {
-	float sphereDist = sphereSDF(samplePoint - vec3(0.0, 1.0, 0.0));
-	float cubeDist = cubeSDF(samplePoint);
-	return unionSDF(sphereDist, cubeDist);
+	return (1+sin(time/4))*multiNodesSDF(samplePoint);
 }
 
 /**
@@ -243,7 +254,7 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(45.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(8.0, 5.0, 7.0);
+    vec3 eye = vec3(1.0, 1.0, 30.0);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     
@@ -259,7 +270,7 @@ void main()
 			return;
 		}
 		// sky
-        gl_FragColor = vec4(0.0, 0.0, 0.5, 0.8); // blue
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.8); // blue
 		return;
     }
     
