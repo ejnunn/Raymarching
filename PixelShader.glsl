@@ -65,14 +65,30 @@ float torusSDF(vec3 p1) {
 	return length(q)-p2.y;
 }
 
+/**
+ * Combine all cube transformations into one single building object
+ */
+float buildingSDF(vec3 p, vec3 dims, float fillet, vec3 offset) {
+	return cubeSDF(p, dims.x, dims.y, dims.z) - fillet;
+}
+
 
 /**
  * Creates multiple objects by reusing (or instancing) objects using the modulo operation.
  */
-float multiCubeSDF(vec3 p) {
-	// mod value changes size of repeated instance area, +/- value affects _____
-	p.xz = mod(p.xz, 5.0) - vec2(2.5);					// instance on xy-plane
-	return cubeSDF(p, 1.0, 3.0, 1.0) - vec3(0.25);		// rounded-cube DE
+float multiBuildingSDF(vec3 p) {
+	// mod value changes size of repeated instance area, +/- vec affects offset of repeated area
+	p.xz = mod(p.xz, 5.0) - vec2(2.5);								// instance on xy-plane
+	
+	// building attributes
+	vec3 buildingDims = vec3(1.0, 3.0, 1.0);
+	float buildingFillet = 0.25;
+	vec3 buildingOffset = vec3(1.0, 0.0, 1.0);
+
+	// distance to building
+	float building1Dist = buildingSDF(p, buildingDims, buildingFillet, buildingOffset);	// rounded-cube DE
+	
+	return building1Dist;
 }
 
 /**
@@ -92,7 +108,7 @@ float groundSDF(vec3 p) {
  */
 float sceneSDF(vec3 samplePoint) {
 	float groundDist = groundSDF(samplePoint);
-	float objectDist = multiCubeSDF(samplePoint);
+	float objectDist = multiBuildingSDF(samplePoint);
 	vec3 moonCenter = vec3(10.0, 20.0, -30.0-time);
 	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
 	// check if ground is closest
