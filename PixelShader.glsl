@@ -28,14 +28,14 @@ float intersectSDF(float distA, float distB) {
 	return max(distA, -distB);
  }
 
-/**
+ /**
  * Signed distance function for a cube centered at the origin
  * with width = height = length = 2.0
  */
-float cubeSDF(vec3 p) {
+float cubeSDF(vec3 p, vec3 dims) {
     // If d.x < 0, then -1 < p.x < 1, and same logic applies to p.y, p.z
     // So if all components of d are negative, then p is inside the unit cube
-    vec3 d = abs(p) - vec3(1.0, 1.0, 1.0);
+    vec3 d = abs(p) - dims;
     
     // Assuming p is inside the cube, how far is it from the surface?
     // Result will be negative or zero.
@@ -46,6 +46,14 @@ float cubeSDF(vec3 p) {
     float outsideDistance = length(max(d, 0.0));
     
     return insideDistance + outsideDistance;
+}
+
+/**
+ * Signed distance function for a cube centered at the origin
+ * with width = height = length = 2.0
+ */
+float cubeSDF(vec3 p) {
+    return cubeSDF(p, vec3(1, 1, 1));
 }
 
 /**
@@ -77,11 +85,17 @@ float planeSDF( vec3 p, vec4 n ) {
  * Creates one instance of a unique shape
  */
  float nodeSDF(vec3 p) {
-	float object1Dist = sphereSDF(p, 1.25, vec3(0, 0, 0));
-	float object2Dist = cubeSDF(p);
-	float matrixDist =  differenceSDF(object2Dist, object1Dist);
-	float styleDist = sphereSDF(p, .1, vec3(0));
-	return unionSDF(matrixDist, styleDist);
+	// matrix of tunnels
+	float tunnel1Dist = sphereSDF(p, 1.35, vec3(0, 0, 0));
+	float tunnel2Dist = cubeSDF(p);
+	float tunnelDist =  differenceSDF(tunnel2Dist,tunnel1Dist);
+
+	// center style object
+	float styleSphereDist = sphereSDF(p, .125, vec3(0));
+	float styleCubeDist = cubeSDF(p, vec3(.1, .1, .1));
+	float styleDist = differenceSDF(styleSphereDist, styleCubeDist);
+	
+	return unionSDF(tunnelDist, styleDist);
 }
 
 /**
@@ -217,16 +231,15 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
     vec3 color = ambientLight * k_a;
     
 	// center light
-	vec3 light1Pos = vec3(1.2, 1.2, 1.2);
-	vec3 light1Intensity = vec3(0.5, 0.9, 0.9);
-	color += phongContribForLight(k_d, k_s, alpha, p, eye, light1Pos, light1Intensity);
+	vec3 centerLightPos = vec3(.25*cos(3.0*time), cos(.25*time), sin(.5*time));
+	vec3 centerLightIntensity = vec3(sin(time));
+	color += phongContribForLight(k_d, k_s, alpha, p, eye, centerLightPos, centerLightIntensity);
 
-	// moving lights
-	for (int i = 0; i < 4; i++) {
-		vec3 light1Pos = vec3(-mod(i*time, 50), 1.0, -mod(i*time, 25));
-		vec3 light1Intensity = vec3(0.8, 0.8, 0.8);
-		color += phongContribForLight(k_d, k_s, alpha, p, eye, light1Pos, light1Intensity);
-    }
+	// orbit lights
+	vec3 orbitLightPos = vec3(cos(3.0*time), cos(3.0*time), sin(3.0*time));
+	vec3 orbitLight1Intensity = vec3(0.8, 0.8, 0.8);
+	color += phongContribForLight(k_d, k_s, alpha, p, eye, orbitLightPos, orbitLight1Intensity);
+    
     return color;
 }
 
@@ -253,8 +266,8 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 
 void main()
 {
-	vec3 viewDir = rayDirection(45.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(1.2, 1.2, 20.0-time);
+	vec3 viewDir = rayDirection(75.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
+    vec3 eye = vec3(.5*sin(time)+1, .5*cos(time/3)+1, 20.0-time);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(1.0, 1.0, 1-time), vec3(0.0, 1.0, 0.0));
     
@@ -278,9 +291,9 @@ void main()
     vec3 p = eye + dist * worldDir;
     
     vec3 K_a = vec3(0.2, 0.2, 0.2);
-    vec3 K_d = vec3(0.7, 0.2, 0.2);
+    vec3 K_d = vec3(.6*sin(time)+.2, .6*sin(time*2)+.2, .6*sin(time*3)+.2);
     vec3 K_s = vec3(1.0, 1.0, 1.0);
-    float shininess = 10.0;
+    float shininess = 1000.0;
     
     vec3 color = phongIllumination(K_a, K_d, K_s, shininess, p, eye);
     
