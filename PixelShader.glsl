@@ -68,7 +68,7 @@ float torusSDF(vec3 p1) {
 /**
  * Combine all cube transformations into one single building object
  */
-float buildingSDF(vec3 p, vec3 dims, float fillet, vec3 offset) {
+float buildingSDF(vec3 p, vec3 dims, float fillet) {
 	return cubeSDF(p, dims.x, dims.y, dims.z) - fillet;
 }
 
@@ -78,17 +78,27 @@ float buildingSDF(vec3 p, vec3 dims, float fillet, vec3 offset) {
  */
 float multiBuildingSDF(vec3 p) {
 	// mod value changes size of repeated instance area, +/- vec affects offset of repeated area
-	p.xz = mod(p.xz, 5.0) - vec2(2.5);								// instance on xy-plane
+	p.xz = mod(p.xz, 10.0) - vec2(5.0);		// instance of building 1
 	
-	// building attributes
-	vec3 buildingDims = vec3(1.0, 3.0, 1.0);
-	float buildingFillet = 0.25;
-	vec3 buildingOffset = vec3(1.0, 0.0, 1.0);
+	// building 1 attributes
+	vec3 building1Dims = vec3(1.0, 5.0, 1.0);
+	float building1Fillet = 0.25;
 
-	// distance to building
-	float building1Dist = buildingSDF(p, buildingDims, buildingFillet, buildingOffset);	// rounded-cube DE
+	// distance to rounded-building
+	float building1Dist = buildingSDF(p, building1Dims, building1Fillet);
+
+	// frequency of building 2
+	p.xz = mod(p.xz, 5.0) - vec2(2.5);		// instance of building 2
+
+	// building 2 attributes
+	vec3 building2Dims = vec3(1.0, 3.0, 1.0);
+	float building2Fillet = 0.25;
+	vec3 building2Offset = vec3(1.0, 0.0, 5.0);
+
+	// distance to rounded-building
+	float building2Dist = buildingSDF(p, building2Dims, building2Fillet);
 	
-	return building1Dist;
+	return min(building1Dist, building2Dist);
 }
 
 /**
@@ -286,7 +296,7 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(-0.25, 4.0, 15.0-time);
+    vec3 eye = vec3(-0.25, 6.0, 15.0-time);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(-0.25, 3.0, -time), vec3(0.0, 1.0, 0.0));
     
