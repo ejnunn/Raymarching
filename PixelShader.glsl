@@ -23,14 +23,12 @@ float unionSDF(float distA, float distB) {
 	return min(distA, distB);
 }
 
-/**
- * Creates one instance of a unique shape
+ /**
+ * Constructive solid geometry difference operation on SDF-calculated distances.
  */
- float nodeSDF(vec3 p) {
-	float object1Dist = sphereSDF(p, 1.25, vec3(0, 0, 0));
-	float object2Dist = cubeSDF(p);
-	return differenceSDF(object2Dist, object1Dist);
-}
+ float differenceSDF(float distA, float distB) {
+	return max(distA, -distB);
+ }
 
 /**
  * Signed distance function for a cube centered at the origin
@@ -39,6 +37,15 @@ float unionSDF(float distA, float distB) {
 float cubeSDF(vec3 p, vec3 dims, vec3 center) {
 	vec3 q = abs(p-center) - dims;
     return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+
+/**
+ * Creates one instance of a unique shape
+ */
+ float nodeSDF(vec3 p) {
+	float object1Dist = cubeSDF(p, vec3(4.6, 5.6, 6.6), vec3(4.5, 4.4, 5.5));
+	float object2Dist = cubeSDF(p, vec3(4.6, 5.6, 6.6), vec3(4.5, 4.4, 5.5));
+	return differenceSDF(object2Dist, object1Dist);
 }
 
 /**
@@ -79,27 +86,52 @@ float buildingSDF(vec3 p, vec3 dims, vec3 center, float fillet) {
 	return cubeSDF(p, dims, center) - fillet;
 }
 
+/**
+ * Combine all cube transformations into one single building object
+ */
+float buildingWithWindow(vec3 p, vec3 dims, vec3 center, float fillet) {
+	float building = cubeSDF(p, dims, center) - fillet;
+	// Row 1 of windows
+	float window1 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z + 0.14), vec3(center.x - 0.5, center.y * 3.0 +  2.5, center.z ));
+	float window2 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z + 0.14), vec3(center.x - 0.75, center.y * 3.0 + 2.5, center.z));
+	float window3 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z + 0.14), vec3(center.x + 0.05, center.y * 3.0 + 2.5, center.z));
+	float window4 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z + 0.14), vec3(center.x + 0.15, center.y * 3.0 + 2.5, center.z));
+	float diff1 = differenceSDF(differenceSDF(building, window1), window2);
+	float union1 = unionSDF(window1, window2);
+	float union2 = unionSDF(window3, window4);
+	//float union
+	
+	// Row 2 of windows
+	//float window3 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z * 1.5), vec3(center.x * -0.5, center.y * 3.0 - 3.0, center.z ));
+	//float window4 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z * 1.5), vec3(center.x + 0.5, center.y * 3.0 - 3.0, center.z));
+
+	float diff2 = differenceSDF(differenceSDF(diff1, window3), window4);
+
+	//return differenceSDF(diff1, diff2);
+	return differenceSDF(differenceSDF(differenceSDF(differenceSDF(building, window1), window2), window3), window4);
+}
+
 
 float cityBlockSDF(vec3 p) {
 	// building 1 attributes
 	vec3 dims1 = vec3(0.75, 5.0, 0.75);
 	vec3 center1 = vec3(0,0,-2);
-	float fillet1 = 0.25;
+	float fillet1 = 0.125;
 	
 	// building 2 attributes
 	vec3 dims2 = vec3(.75, 3.0, .75);
 	vec3 center2 = vec3(0,0,0);
-	float fillet2 = 0.25;
+	float fillet2 = 0.125;
 
 	// building 3 attributes
 	vec3 dims3 = vec3(.75, 4.0, .75);
 	vec3 center3 = vec3(0,0,2);
-	float fillet3 = 0.25;
+	float fillet3 = 0.125;
 
 	// distance to rounded-building
-	float building1Dist = buildingSDF(p, dims1, center1, fillet1);
-	float building2Dist = buildingSDF(p, dims2, center2, fillet2);
-	float building3Dist = buildingSDF(p, dims3, center3, fillet3);
+	float building1Dist = buildingWithWindow(p, dims1, center1, fillet1);
+	float building2Dist = buildingWithWindow(p, dims2, center2, fillet2);
+	float building3Dist = buildingWithWindow(p, dims3, center3, fillet3);
 	
 	return min(building1Dist, min(building2Dist, building3Dist));
 }
