@@ -74,18 +74,18 @@ float buildingSDF(vec3 p, vec3 dims, vec3 center, float fillet) {
 float cityBlockSDF(vec3 p) {
 	// building 1 attributes
 	vec3 dims1 = vec3(0.75, 5.0, 0.75);
-	vec3 center1 = vec3(0,0,-2);
-	float fillet1 = 0.25;
+	vec3 center1 = vec3(0,0,-2.75);
+	float fillet1 = 0.125;
 	
 	// building 2 attributes
 	vec3 dims2 = vec3(.75, 3.0, .75);
 	vec3 center2 = vec3(0,0,0);
-	float fillet2 = 0.25;
+	float fillet2 = 0.125;
 
 	// building 3 attributes
 	vec3 dims3 = vec3(.75, 4.0, .75);
-	vec3 center3 = vec3(0,0,2);
-	float fillet3 = 0.25;
+	vec3 center3 = vec3(0,0,2.75);
+	float fillet3 = 0.125;
 
 	// distance to rounded-building
 	float building1Dist = buildingSDF(p, dims1, center1, fillet1);
@@ -100,7 +100,7 @@ float cityBlockSDF(vec3 p) {
  */
 float multiBuildingSDF(vec3 p) {
 	// mod value changes size of repeated instance area, +/- vec affects offset of repeated area
-	p.xz = mod(p.xz, vec2(10.0)) - vec2(5.0);		// instance on xy-plane
+	p.xz = mod(p.xz, vec2(6.0, 8.0)) - vec2(3.0, 4.0);		// instance on xy-plane
 	
 	return cityBlockSDF(p);
 }
