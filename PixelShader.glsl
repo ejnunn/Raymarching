@@ -27,10 +27,8 @@ float unionSDF(float distA, float distB) {
  * Signed distance function for a cube centered at the origin
  * with custom width, height, length
  */
-float cubeSDF(vec3 p, float width, float height, float length) {
-	// cube offset by vec3(width, height, length);
-	vec3 q = abs(p) - vec3(width, height, length);
-    
+float cubeSDF(vec3 p, vec3 dims, vec3 center) {
+	vec3 q = abs(p-center) - dims;
     return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
@@ -39,7 +37,7 @@ float cubeSDF(vec3 p, float width, float height, float length) {
  * with width = height = length = 2.0
  */
 float cubeSDF(vec3 p) {
-   return cubeSDF(p, 2.0, 2.0, 2.0);
+   return cubeSDF(p, vec3(2.0, 2.0, 2.0), vec3(0,0,0));
 }
 
 /**
@@ -68,45 +66,51 @@ float torusSDF(vec3 p1) {
 /**
  * Combine all cube transformations into one single building object
  */
-float buildingSDF(vec3 p, vec3 dims, float fillet) {
-	return cubeSDF(p, dims.x, dims.y, dims.z) - fillet;
+float buildingSDF(vec3 p, vec3 dims, vec3 center, float fillet) {
+	return cubeSDF(p, dims, center) - fillet;
 }
 
+
+float cityBlockSDF(vec3 p) {
+	// building 1 attributes
+	vec3 dims1 = vec3(0.75, 5.0, 0.75);
+	vec3 center1 = vec3(0,0,-2);
+	float fillet1 = 0.25;
+	
+	// building 2 attributes
+	vec3 dims2 = vec3(.75, 3.0, .75);
+	vec3 center2 = vec3(0,0,0);
+	float fillet2 = 0.25;
+
+	// building 3 attributes
+	vec3 dims3 = vec3(.75, 4.0, .75);
+	vec3 center3 = vec3(0,0,2);
+	float fillet3 = 0.25;
+
+	// distance to rounded-building
+	float building1Dist = buildingSDF(p, dims1, center1, fillet1);
+	float building2Dist = buildingSDF(p, dims2, center2, fillet2);
+	float building3Dist = buildingSDF(p, dims3, center3, fillet3);
+	
+	return min(building1Dist, min(building2Dist, building3Dist));
+}
 
 /**
  * Creates multiple objects by reusing (or instancing) objects using the modulo operation.
  */
 float multiBuildingSDF(vec3 p) {
 	// mod value changes size of repeated instance area, +/- vec affects offset of repeated area
-	p.xz = mod(p.xz, 10.0) - vec2(5.0);		// instance of building 1
+	p.xz = mod(p.xz, vec2(10.0)) - vec2(5.0);		// instance on xy-plane
 	
-	// building 1 attributes
-	vec3 building1Dims = vec3(1.0, 5.0, 1.0);
-	float building1Fillet = 0.25;
-
-	// distance to rounded-building
-	float building1Dist = buildingSDF(p, building1Dims, building1Fillet);
-
-	// frequency of building 2
-	p.xz = mod(p.xz, 5.0) - vec2(2.5);		// instance of building 2
-
-	// building 2 attributes
-	vec3 building2Dims = vec3(1.0, 3.0, 1.0);
-	float building2Fillet = 0.25;
-	vec3 building2Offset = vec3(1.0, 0.0, 5.0);
-
-	// distance to rounded-building
-	float building2Dist = buildingSDF(p, building2Dims, building2Fillet);
-	
-	return min(building1Dist, building2Dist);
+	return cityBlockSDF(p);
 }
 
 /**
  * Creates multiple objects by reusing (or instancing) objects using the modulo operation.
  */
 float groundSDF(vec3 p) {
-	p.xz = mod(p.xz, 2.0)-vec2(1.0);				// instance on xy-plane
-	return cubeSDF(p, 10.0, 1.0, 10.0) + 1.0;		// cube DE
+	p.xz = mod(p.xz, 2.0)-vec2(1.0);								// instance on xy-plane
+	return cubeSDF(p, vec3(10.0, 1.0, 10.0), vec3(0,0,0)) + 1.0;	// cube DE
 }
 
 /**
