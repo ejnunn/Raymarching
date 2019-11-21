@@ -24,6 +24,15 @@ float unionSDF(float distA, float distB) {
 }
 
 /**
+ * Creates one instance of a unique shape
+ */
+ float nodeSDF(vec3 p) {
+	float object1Dist = sphereSDF(p, 1.25, vec3(0, 0, 0));
+	float object2Dist = cubeSDF(p);
+	return differenceSDF(object2Dist, object1Dist);
+}
+
+/**
  * Signed distance function for a cube centered at the origin
  * with custom width, height, length
  */
