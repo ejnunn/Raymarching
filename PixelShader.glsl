@@ -113,6 +113,12 @@ float groundSDF(vec3 p) {
 	return cubeSDF(p, vec3(10.0, 1.0, 10.0), vec3(0,0,0)) + 1.0;	// cube DE
 }
 
+float displacement(vec3 p) {
+	float coeff = 2.0;
+	return sin(coeff*p.x)*sin(coeff*p.y)*sin(coeff*p.z);
+}
+
+
 /**
  * Signed distance function describing the scene.
  * 
@@ -123,7 +129,7 @@ float groundSDF(vec3 p) {
 float sceneSDF(vec3 samplePoint) {
 	float groundDist = groundSDF(samplePoint);
 	float objectDist = multiBuildingSDF(samplePoint);
-	vec3 moonCenter = vec3(10.0, 20.0, -30.0-time);
+	vec3 moonCenter = vec3(10.0, 20.0, -30.0-time) + displacement(samplePoint);
 	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
 	// check if ground is closest
 	if (groundDist < objectDist && groundDist < moonDist) {
