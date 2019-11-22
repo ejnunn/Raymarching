@@ -57,10 +57,18 @@ float sphereSDF(vec3 p) {
 /**
  * Creates a torus using two points
  */
-float torusSDF(vec3 p1) {
-	vec2 p2 = vec2(0.5, 0.25);
-	vec2 q = vec2(length(p1.xz)-p2.x, p1.y);
-	return length(q)-p2.y;
+float torusSDF(vec3 p1, vec3 center) {
+	vec2 t = vec2(2.0, .75);
+	vec2 q = vec2(length(p1.xz-center.xz)-t.x, p1.y-center.y);
+	return length(q)-t.y;
+}
+
+float spaceNeedleSDF(vec3 p) {
+	vec3 needleCenter = vec3(5, 0, -20);
+	vec3 observatoryCenter = vec3(5, 8, -20);
+	float needleDist = cubeSDF(p, vec3(.5, 10, .5), needleCenter);
+	float observatoryDist = torusSDF(p, observatoryCenter);
+	return min(needleDist, observatoryDist);
 }
 
 /**
@@ -113,6 +121,7 @@ float groundSDF(vec3 p) {
 	return cubeSDF(p, vec3(10.0, 1.0, 10.0), vec3(0,0,0)) + 1.0;	// cube DE
 }
 
+
 /**
  * Signed distance function describing the scene.
  * 
@@ -122,17 +131,19 @@ float groundSDF(vec3 p) {
  */
 float sceneSDF(vec3 samplePoint) {
 	float groundDist = groundSDF(samplePoint);
-	float objectDist = multiBuildingSDF(samplePoint);
+	float buildingsDist = multiBuildingSDF(samplePoint);
 	vec3 moonCenter = vec3(10.0, 20.0, -30.0-time);
 	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
+	float spaceNeedleDist = spaceNeedleSDF(samplePoint);
+
 	// check if ground is closest
-	if (groundDist < objectDist && groundDist < moonDist) {
+	if (groundDist < buildingsDist && groundDist < moonDist) {
 		hitGround = true;
 		hitMoon = false;
 		return groundDist;
 	}
 	// check if moon is hit
-	else if (moonDist < groundDist && moonDist < objectDist) {
+	else if (moonDist < groundDist && moonDist < buildingsDist) {
 		hitGround = false;
 		hitMoon = true;
 		return moonDist;
@@ -141,7 +152,7 @@ float sceneSDF(vec3 samplePoint) {
 	else {
 		hitGround = false;
 		hitMoon = false;
-		return objectDist;
+		return min(spaceNeedleDist, buildingsDist);
 	}
 
 }
