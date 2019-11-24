@@ -3,6 +3,7 @@ const int MAX_MARCHING_STEPS = 255;
 const float MIN_DIST = 0.0;
 const float MAX_DIST = 100.0;
 const float EPSILON = 0.0001;
+const float CLOCK_SPEED = 10.0;
 uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
@@ -123,7 +124,7 @@ float groundSDF(vec3 p) {
 float sceneSDF(vec3 samplePoint) {
 	float groundDist = groundSDF(samplePoint);
 	float objectDist = multiBuildingSDF(samplePoint);
-	vec3 moonCenter = vec3(10.0, 20.0, -30.0-time);
+	vec3 moonCenter = vec3(10.0, 20.0, -30.0-CLOCK_SPEED*time);
 	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
 	// check if ground is closest
 	if (groundDist < objectDist && groundDist < moonDist) {
@@ -267,7 +268,7 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
 	// moon light
 	vec3 light2Pos = vec3(4.0,
                           16.0,
-                          -24.0-time);
+                          -24.0-CLOCK_SPEED*time);
     vec3 light2Intensity = vec3(0.8, 0.8, 0.8);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
@@ -300,9 +301,9 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(-0.25, 6.0, 15.0-time);
+    vec3 eye = vec3(-0.25, 6.0, 15.0-CLOCK_SPEED*time);
     
-    mat4 viewToWorld = viewMatrix(eye, vec3(-0.25, 3.0, -time), vec3(0.0, 1.0, 0.0));
+    mat4 viewToWorld = viewMatrix(eye, vec3(-0.25, 3.0, -CLOCK_SPEED*time), vec3(0.0, 1.0, 0.0));
     
     vec3 worldDir = (viewToWorld * vec4(viewDir, 0.0)).xyz;
     
