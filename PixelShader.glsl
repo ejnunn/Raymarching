@@ -31,8 +31,8 @@ float unionSDF(float distA, float distB) {
  }
 
 /**
- * Signed distance function for a cube centered at the origin
- * with custom width, height, length
+ * Signed distance function for a cube centered at center
+ * with custom radii for length, width and height
  */
 float cubeSDF(vec3 p, vec3 dims, vec3 center) {
 	vec3 q = abs(p-center) - dims;
@@ -90,25 +90,21 @@ float buildingSDF(vec3 p, vec3 dims, vec3 center, float fillet) {
  * Combine all cube transformations into one single building object
  */
 float buildingWithWindow(vec3 p, vec3 dims, vec3 center, float fillet) {
-	float building = cubeSDF(p, dims, center) - fillet;
-	// Row 1 of windows
-	float window1 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z + 0.14), vec3(center.x - 0.5, center.y * 3.0 +  2.5, center.z ));
-	float window2 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z + 0.14), vec3(center.x - 0.75, center.y * 3.0 + 2.5, center.z));
-	float window3 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z + 0.14), vec3(center.x + 0.05, center.y * 3.0 + 2.5, center.z));
-	float window4 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z + 0.14), vec3(center.x + 0.15, center.y * 3.0 + 2.5, center.z));
-	float diff1 = differenceSDF(differenceSDF(building, window1), window2);
-	float union1 = unionSDF(window1, window2);
-	float union2 = unionSDF(window3, window4);
-	//float union
 	
-	// Row 2 of windows
-	//float window3 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z * 1.5), vec3(center.x * -0.5, center.y * 3.0 - 3.0, center.z ));
-	//float window4 = cubeSDF(p, vec3(dims.x * 0.05, dims.y * 0.05, dims.z * 1.5), vec3(center.x + 0.5, center.y * 3.0 - 3.0, center.z));
+	float building = cubeSDF(p, dims, center) - fillet;
+	vec3 windowSize = vec3(0.05,  0.075, 0.05);
 
-	float diff2 = differenceSDF(differenceSDF(diff1, window3), window4);
-
-	//return differenceSDF(diff1, diff2);
-	return differenceSDF(differenceSDF(differenceSDF(differenceSDF(building, window1), window2), window3), window4);
+	// Only make windows in the middle of the building, 
+	// i.e. not to close to the ground or the roof
+	if (p.y < dims.y - 0.15 && p.y > 0.4)
+	{
+		p.x = mod(p.x, 0.2) + 0.0;
+		p.y = mod(p.y, 0.35) + 0.0;
+		p.z = mod(p.z, 0.2) + 0.0;
+		float window1 = cubeSDF(p, windowSize, vec3(center.x + 0.1, center.y + 0.1, 0.05));
+		return differenceSDF(building, window1);
+	}
+	return building;
 }
 
 
@@ -337,28 +333,8 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
     );
 }
 
-
-void main()
+vec3 shade(vec3 p, vec3 eye)
 {
-	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(-0.25, 6.0, 15.0-time);
-    
-    mat4 viewToWorld = viewMatrix(eye, vec3(-0.25, 3.0, -time), vec3(0.0, 1.0, 0.0));
-    
-    vec3 worldDir = (viewToWorld * vec4(viewDir, 0.0)).xyz;
-    
-    float dist = shortestDistanceToSurface(eye, worldDir, MIN_DIST, MAX_DIST);
-    
-    if (dist > MAX_DIST - EPSILON) {
-        // Didn't hit anything
-		// sky
-        gl_FragColor = vec4(0.0, 0.0, 0.2, 0.3); // blue
-		return;
-    }
-    
-    // The closest point on the surface to the eyepoint along the view ray
-    vec3 p = eye + dist * worldDir;
-    
 	// object hit - default
 	vec3 K_a = vec3(0.2, 0.2, 0.2);
 	vec3 K_d = vec3(0.7, 0.2, 0.2); // red
@@ -382,7 +358,49 @@ void main()
 	}
 
 
-    vec3 color = phongIllumination(K_a, K_d, K_s, shininess, p, eye);
+    return phongIllumination(K_a, K_d, K_s, shininess, p, eye);
+}
+
+vec4 colorForFrag(vec2 fragCoord) 
+{
+	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), fragCoord);
+    // moving camera postion in z direction with time:
+	vec3 eye = vec3(-0.25, 6.0, 15.0-time);
+	vec3 target = vec3(-0.25, 3.0, -time);
     
-    gl_FragColor = vec4(color, 1.0);
+    mat4 viewToWorld = viewMatrix(eye, target, vec3(0.0, 1.0, 0.0));
+    
+    vec3 worldDir = (viewToWorld * vec4(viewDir, 0.0)).xyz;
+    
+    float dist = shortestDistanceToSurface(eye, worldDir, MIN_DIST, MAX_DIST);
+    
+    if (dist > MAX_DIST - EPSILON) {
+        // Didn't hit anything
+		// sky
+        return vec4(0.0, 0.0, 0.2, 0.3); // blue
+    }
+    
+    // The closest point on the surface to the eyepoint along the view ray
+    vec3 p = eye + dist * worldDir;
+
+	return vec4(shade(p, eye), 1.0);
+}
+
+
+void main()
+{
+	float delta = 0.75;
+
+	vec4 color = colorForFrag(gl_FragCoord.xy);
+//	color += colorForFrag(gl_FragCoord.xy + vec2(delta, 0));
+//	color += colorForFrag(gl_FragCoord.xy - vec2(delta, 0));
+//	color += colorForFrag(gl_FragCoord.xy + vec2(0, delta));
+//	color += colorForFrag(gl_FragCoord.xy - vec2(0, delta));
+//	color += colorForFrag(gl_FragCoord.xy + vec2(delta, delta));
+//	color += colorForFrag(gl_FragCoord.xy - vec2(delta, delta));
+//	color += colorForFrag(gl_FragCoord.xy + vec2(-delta, delta));
+//	color += colorForFrag(gl_FragCoord.xy - vec2(-delta, delta));
+//	color /= 2.0;
+    
+    gl_FragColor = vec4(color);
 }
