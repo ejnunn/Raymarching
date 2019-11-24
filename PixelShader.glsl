@@ -3,7 +3,7 @@ const int MAX_MARCHING_STEPS = 255;
 const float MIN_DIST = 0.0;
 const float MAX_DIST = 100.0;
 const float EPSILON = 0.0001;
-const float CLOCK_SPEED = 10.0;
+const float CLOCK_SPEED = 10.0; // affects the speed of camera/moon/lights
 uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
@@ -301,7 +301,7 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(-0.25, 6.0, 15.0-CLOCK_SPEED*time);
+    vec3 eye = vec3(3.0*sin(time)-0.25, 6.0, 15.0-CLOCK_SPEED*time);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(-0.25, 3.0, -CLOCK_SPEED*time), vec3(0.0, 1.0, 0.0));
     
