@@ -1,16 +1,23 @@
+// PixelShader.glsl
+// Final project - Raymarching cityscape
+// Yvonne Rogell & Eric Nunn
+// Graphics 5700, FQ 2019
+// Seattle University
+
 #version 130
 const int MAX_MARCHING_STEPS = 255;
 const float MIN_DIST = 0.0;
 const float MAX_DIST = 100.0;
-const float EPSILON = 0.0001;
-const float CAMERA_SPEED = 4.0;
+const float EPSILON = 0.0001; // Threshold for seeing if you hit an object
+const float CAMERA_SPEED = 5.0;
 uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
 bool hitGround;
 bool hitMoon;
 
- /**
+/**
+ * Returns the difference between two objects. distB is subtracted from distA.
  * Constructive solid geometry difference operation on SDF-calculated distances.
  */
  float differenceSDF(float distA, float distB) {
@@ -18,8 +25,8 @@ bool hitMoon;
  }
 
 /**
- * Signed distance function for a cube centered at center
- * with custom radii for length, width and height
+ * Signed distance function for a cube centered at "center""
+ * with custom radii for length, width and height (added to "dims").
  */
 float cubeSDF(vec3 p, vec3 dims, vec3 center) {
 	vec3 q = abs(p-center) - dims;
@@ -27,23 +34,17 @@ float cubeSDF(vec3 p, vec3 dims, vec3 center) {
 }
 
 /**
- * Creates one instance of a unique shape
- */
- float nodeSDF(vec3 p) {
-	float object1Dist = cubeSDF(p, vec3(4.6, 5.6, 6.6), vec3(4.5, 4.4, 5.5));
-	float object2Dist = cubeSDF(p, vec3(4.6, 5.6, 6.6), vec3(4.5, 4.4, 5.5));
-	return differenceSDF(object2Dist, object1Dist);
-}
-
-/**
- * Signed distance function for a sphere with radius "r" and centered at "center"
+ * Signed distance function for a sphere with radius "r", 
+ * centered at "center".
  */
 float sphereSDF(vec3 p, float r, vec3 center) {
     return length(p - center) - r;
 }
 
 /**
- * Combine all cube transformations into one single building object
+ * Create a building with repeating windows. Building size is defined
+ * by "dims", and building is centered at "center" with rounded edges
+ * defined by fillet. 
  */
 float buildingWithWindow(vec3 p, vec3 dims, vec3 center, float fillet) {
 	
@@ -51,9 +52,8 @@ float buildingWithWindow(vec3 p, vec3 dims, vec3 center, float fillet) {
 	vec3 windowSize = vec3(0.05,  0.075, 0.05);
 
 	// Only make windows in the middle of the building, 
-	// i.e. not to close to the ground or the roof
-	if (p.y < dims.y - 0.15 && p.y > 0.4)
-	{
+	// i.e. not too close to the ground or the roof
+	if (p.y < dims.y - 0.15 && p.y > 0.4) {
 		p.x = mod(p.x, 0.2) + 0.0;
 		p.y = mod(p.y, 0.35) + 0.0;
 		p.z = mod(p.z, 0.2) + 0.0;
@@ -63,7 +63,9 @@ float buildingWithWindow(vec3 p, vec3 dims, vec3 center, float fillet) {
 	return building;
 }
 
-
+/**
+ * Create a block of three buildings.
+ */
 float cityBlockSDF(vec3 p) {
 	// building 1 attributes
 	vec3 dims1 = vec3(0.75, 5.0, 0.75);
@@ -91,9 +93,9 @@ float cityBlockSDF(vec3 p) {
 /**
  * Creates multiple objects by reusing (or instancing) objects using the modulo operation.
  */
-float multiBuildingSDF(vec3 p) {
+float multiCityBlockSDF(vec3 p) {
 	// mod value changes size of repeated instance area, +/- vec affects offset of repeated area
-	p.xz = mod(p.xz, vec2(6.0, 8.0)) - vec2(3.0, 4.0);		// instance on xy-plane
+	p.xz = mod(p.xz, vec2(6.0, 8.0)) - vec2(3.0, 4.0); // instance on xy-plane
 	
 	return cityBlockSDF(p);
 }
@@ -114,26 +116,28 @@ float groundSDF(vec3 p) {
  * negative indicating inside.
  */
 float sceneSDF(vec3 samplePoint) {
+	// Reset all color flags
+	hitMoon = false;
+	hitGround = false;
+
+	// Calculate distance to each object
 	float groundDist = groundSDF(samplePoint);
-	float objectDist = multiBuildingSDF(samplePoint);
+	float objectDist = multiCityBlockSDF(samplePoint);
 	vec3 moonCenter = vec3(10.0, 20.0, -30.0-CAMERA_SPEED*time);
 	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
-	// check if ground is closest
+	
+	// Check if ground is closest
 	if (groundDist < objectDist && groundDist < moonDist) {
 		hitGround = true;
-		hitMoon = false;
 		return groundDist;
 	}
-	// check if moon is hit
+	// Check if moon is hit
 	else if (moonDist < groundDist && moonDist < objectDist) {
-		hitGround = false;
 		hitMoon = true;
 		return moonDist;
 	}
-	// otherwise building was hit
+	// Otherwise building was hit
 	else {
-		hitGround = false;
-		hitMoon = false;
 		return objectDist;
 	}
 }
@@ -227,8 +231,6 @@ vec3 phongContribForLight(vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 eye,
     return lightIntensity * (k_d * dotLN + k_s * pow(dotRV, alpha));
 }
 
-
-
 /**
  * Lighting via Phong illumination.
  * 
@@ -288,6 +290,9 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
     );
 }
 
+/**
+ * Method adding color and phong illumination to objects defined in scene.
+ */
 vec3 shade(vec3 p, vec3 eye)
 {
 	// object hit - default
@@ -313,11 +318,14 @@ vec3 shade(vec3 p, vec3 eye)
     return phongIllumination(K_a, K_d, K_s, shininess, p, eye);
 }
 
+/**
+ * Returns color for the given frag coordinate.
+ */
 vec4 colorForFrag(vec2 fragCoord) 
 {
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), fragCoord);
     // moving camera postion in z direction with time:
-	vec3 eye = vec3(-0.25, 6.0, 15.0-CAMERA_SPEED*time);
+	vec3 eye = vec3(-0.25, clamp(0.5*time, 2, 6), 15.0-CAMERA_SPEED*time);
 	vec3 target = vec3(-0.25, 3.0, -CAMERA_SPEED*time);
     
     mat4 viewToWorld = viewMatrix(eye, target, vec3(0.0, 1.0, 0.0));
@@ -338,10 +346,9 @@ vec4 colorForFrag(vec2 fragCoord)
 	return vec4(shade(p, eye), 1.0);
 }
 
-
+// Main function. Gets and sets the color of the current point in space. 
 void main()
 {
 	vec4 color = colorForFrag(gl_FragCoord.xy);
-    
     gl_FragColor = vec4(color);
 }
