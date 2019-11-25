@@ -101,7 +101,7 @@ float buildingWithWindow(vec3 p, vec3 dims, vec3 center, float fillet) {
 		p.x = mod(p.x, 0.2) + 0.0;
 		p.y = mod(p.y, 0.35) + 0.0;
 		p.z = mod(p.z, 0.2) + 0.0;
-		float window1 = cubeSDF(p, windowSize, vec3(center.x + 0.1, center.y + 0.1, 0.14));
+		float window1 = cubeSDF(p, windowSize, vec3(center.x + 0.1, center.y + 0.1, 0.08));
 		return differenceSDF(building, window1);
 	}
 	return building;
@@ -292,9 +292,7 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
     vec3 color = ambientLight * k_a;
     
 	// street light
-    vec3 light1Pos = vec3(0.0,
-                          2.0,
-                          time);
+    vec3 light1Pos = vec3(0.0, 2.0, time);
     vec3 light1Intensity = vec3(0.2, 0.2, 0.2);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
@@ -302,9 +300,7 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
                                   light1Intensity);
 	
 	// moon light
-	vec3 light2Pos = vec3(4.0,
-                          16.0,
-                          -24.0-time);
+	vec3 light2Pos = vec3(4.0, 16.0,-24.0-time);
     vec3 light2Intensity = vec3(0.8, 0.8, 0.8);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
