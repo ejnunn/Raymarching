@@ -31,7 +31,7 @@ void InitVertexBuffer() {
 void Display(GLFWwindow* w) {
 	glUseProgram(program);							// ensure correct program
 	glBindBuffer(GL_ARRAY_BUFFER, vBuffer);			// activate vertex buffer
-	float time = (clock() - start) / CLOCKS_PER_SEC * 10.0;
+	float time = (clock() - start) / CLOCKS_PER_SEC;
 
 	GLint id = glGetAttribLocation(program, "point");
 	glEnableVertexAttribArray(id);
