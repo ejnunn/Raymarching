@@ -159,26 +159,28 @@ float groundSDF(vec3 p) {
  * negative indicating inside.
  */
 float sceneSDF(vec3 samplePoint) {
+	// reset all color flags
+	hitMoon = false;
+	hitGround = false;
+
+	// calculate distance to each object
 	float groundDist = groundSDF(samplePoint);
 	float objectDist = multiBuildingSDF(samplePoint);
 	vec3 moonCenter = vec3(10.0, 20.0, -30.0-CAMERA_SPEED*time);
 	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
+	
 	// check if ground is closest
 	if (groundDist < objectDist && groundDist < moonDist) {
 		hitGround = true;
-		hitMoon = false;
 		return groundDist;
 	}
 	// check if moon is hit
 	else if (moonDist < groundDist && moonDist < objectDist) {
-		hitGround = false;
 		hitMoon = true;
 		return moonDist;
 	}
 	// otherwise building was hit
 	else {
-		hitGround = false;
-		hitMoon = false;
 		return objectDist;
 	}
 
@@ -366,7 +368,7 @@ vec4 colorForFrag(vec2 fragCoord)
 {
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), fragCoord);
     // moving camera postion in z direction with time:
-	vec3 eye = vec3(-0.25, 6.0, 15.0-CAMERA_SPEED*time);
+	vec3 eye = vec3(-0.25, clamp(0.5*time, 2, 6), 15.0-CAMERA_SPEED*time);
 	vec3 target = vec3(-0.25, 3.0, -CAMERA_SPEED*time);
     
     mat4 viewToWorld = viewMatrix(eye, target, vec3(0.0, 1.0, 0.0));
