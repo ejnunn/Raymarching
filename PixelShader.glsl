@@ -301,7 +301,7 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(3.0*sin(time)-0.25, 6.0, 15.0-CLOCK_SPEED*time);
+    vec3 eye = vec3(-0.25, 6.0, 15.0-CLOCK_SPEED*time);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(-0.25, 3.0, -CLOCK_SPEED*time), vec3(0.0, 1.0, 0.0));
     
