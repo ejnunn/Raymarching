@@ -28,6 +28,10 @@ float intersectSDF(float distA, float distB) {
 	return max(distA, -distB);
  }
 
+ float displacement(vec3 p) {
+	return sin(5*p.x) * sin(5*p.y) * sin(5*p.z);
+}
+
  /**
  * Signed distance function for a cube centered at the origin
  * with width = height = length = 2.0
@@ -92,8 +96,7 @@ float planeSDF( vec3 p, vec4 n ) {
 
 	// center style object
 	float styleSphereDist = sphereSDF(p, .125, vec3(0));
-	float styleCubeDist = cubeSDF(p, vec3(.1, .1, .1));
-	float styleDist = differenceSDF(styleSphereDist, styleCubeDist);
+	float styleDist = styleSphereDist + .2*displacement(p);
 	
 	return unionSDF(tunnelDist, styleDist);
 }
@@ -231,7 +234,7 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
     vec3 color = ambientLight * k_a;
     
 	// center light
-	vec3 centerLightPos = vec3(.25*cos(3.0*time), cos(.25*time), sin(.5*time));
+	vec3 centerLightPos = vec3(.5*cos(3.0*time), cos(.25*time), sin(.5*time));
 	vec3 centerLightIntensity = vec3(sin(time));
 	color += phongContribForLight(k_d, k_s, alpha, p, eye, centerLightPos, centerLightIntensity);
 
@@ -267,7 +270,7 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
 void main()
 {
 	vec3 viewDir = rayDirection(75.0, vec2(windowWidth, windowHeight), gl_FragCoord.xy);
-    vec3 eye = vec3(.5*sin(time)+1, .5*cos(time/3)+1, 20.0-time);
+    vec3 eye = vec3(1.25, 1.25, 20.0-time);
     
     mat4 viewToWorld = viewMatrix(eye, vec3(1.0, 1.0, 1-time), vec3(0.0, 1.0, 0.0));
     
@@ -291,7 +294,7 @@ void main()
     vec3 p = eye + dist * worldDir;
     
     vec3 K_a = vec3(0.2, 0.2, 0.2);
-    vec3 K_d = vec3(.6*sin(time)+.2, .6*sin(time*2)+.2, .6*sin(time*3)+.2);
+    vec3 K_d = vec3(.6*sin(time)+.3, .6*sin(time*2)+.3, .6*sin(time*3)+.3);
     vec3 K_s = vec3(1.0, 1.0, 1.0);
     float shininess = 1000.0;
     
