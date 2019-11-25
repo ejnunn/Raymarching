@@ -3,7 +3,7 @@ const int MAX_MARCHING_STEPS = 255;
 const float MIN_DIST = 0.0;
 const float MAX_DIST = 100.0;
 const float EPSILON = 0.0001;
-const float CAMERA_SPEED = 3.0;
+const float CAMERA_SPEED = 5.0;
 uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
@@ -97,8 +97,7 @@ float buildingWithWindow(vec3 p, vec3 dims, vec3 center, float fillet) {
 
 	// Only make windows in the middle of the building, 
 	// i.e. not to close to the ground or the roof
-	if (p.y < dims.y - 0.15 && p.y > 0.4)
-	{
+	if (p.y < dims.y - 0.15 && p.y > 0.4) {
 		p.x = mod(p.x, 0.2) + 0.0;
 		p.y = mod(p.y, 0.35) + 0.0;
 		p.z = mod(p.z, 0.2) + 0.0;
