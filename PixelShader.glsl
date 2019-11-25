@@ -3,26 +3,12 @@ const int MAX_MARCHING_STEPS = 255;
 const float MIN_DIST = 0.0;
 const float MAX_DIST = 100.0;
 const float EPSILON = 0.0001;
-const float CAMERA_SPEED = 3.0;
+const float CAMERA_SPEED = 4.0;
 uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
 bool hitGround;
 bool hitMoon;
-
-/**
- * Constructive solid geometry intersection operation on SDF-calculated distances.
- */
-float intersectSDF(float distA, float distB) {
-    return max(distA, distB);
-}
-
-/**
- * Constructive solid geometry union operation on SDF-calculated distances.
- */
-float unionSDF(float distA, float distB) {
-	return min(distA, distB);
-}
 
  /**
  * Constructive solid geometry difference operation on SDF-calculated distances.
@@ -50,41 +36,10 @@ float cubeSDF(vec3 p, vec3 dims, vec3 center) {
 }
 
 /**
- * Signed distance function for a cube centered at the origin
- * with width = height = length = 2.0
- */
-float cubeSDF(vec3 p) {
-   return cubeSDF(p, vec3(2.0, 2.0, 2.0), vec3(0,0,0));
-}
-
-/**
  * Signed distance function for a sphere with radius "r" and centered at "center"
  */
 float sphereSDF(vec3 p, float r, vec3 center) {
     return length(p - center) - r;
-}
-
-/**
- * Signed distance function for a sphere centered at the origin with radius 1.0
- */
-float sphereSDF(vec3 p) {
-	return sphereSDF(p, 1, vec3(0));
-}
-
-/**
- * Creates a torus using two points
- */
-float torusSDF(vec3 p1) {
-	vec2 p2 = vec2(0.5, 0.25);
-	vec2 q = vec2(length(p1.xz)-p2.x, p1.y);
-	return length(q)-p2.y;
-}
-
-/**
- * Combine all cube transformations into one single building object
- */
-float buildingSDF(vec3 p, vec3 dims, vec3 center, float fillet) {
-	return cubeSDF(p, dims, center) - fillet;
 }
 
 /**
@@ -181,7 +136,6 @@ float sceneSDF(vec3 samplePoint) {
 		hitMoon = false;
 		return objectDist;
 	}
-
 }
 
 /**
@@ -347,7 +301,6 @@ vec3 shade(vec3 p, vec3 eye)
 		K_a = vec3(0.2, 0.2, 0.2);
 		K_d = vec3(0.2, 0.2, 0.2); // dark grey
 		K_s = vec3(0.5, 0.5, 0.5);
-		shininess = 10.0;
 	}
 
 	// moon hit
@@ -355,9 +308,7 @@ vec3 shade(vec3 p, vec3 eye)
 		K_a = vec3(0.5, 0.5, 0.5);
 		K_d = vec3(1.0, 1.0, 1.0); // white
 		K_s = vec3(0.2, 0.2, 0.2);
-		shininess = 10.0;
 	}
-
 
     return phongIllumination(K_a, K_d, K_s, shininess, p, eye);
 }
@@ -390,8 +341,6 @@ vec4 colorForFrag(vec2 fragCoord)
 
 void main()
 {
-	float delta = 0.75;
-
 	vec4 color = colorForFrag(gl_FragCoord.xy);
     
     gl_FragColor = vec4(color);
