@@ -3,6 +3,7 @@ const int MAX_MARCHING_STEPS = 255;
 const float MIN_DIST = 0.0;
 const float MAX_DIST = 100.0;
 const float EPSILON = 0.0001;
+const float CAMERA_SPEED = 3.0;
 uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
@@ -160,7 +161,7 @@ float groundSDF(vec3 p) {
 float sceneSDF(vec3 samplePoint) {
 	float groundDist = groundSDF(samplePoint);
 	float objectDist = multiBuildingSDF(samplePoint);
-	vec3 moonCenter = vec3(10.0, 20.0, -30.0-time);
+	vec3 moonCenter = vec3(10.0, 20.0, -30.0-CAMERA_SPEED*time);
 	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
 	// check if ground is closest
 	if (groundDist < objectDist && groundDist < moonDist) {
@@ -294,7 +295,7 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
 	// street light
     vec3 light1Pos = vec3(0.0,
                           2.0,
-                          time);
+                          CAMERA_SPEED*time);
     vec3 light1Intensity = vec3(0.2, 0.2, 0.2);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
@@ -304,7 +305,7 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
 	// moon light
 	vec3 light2Pos = vec3(4.0,
                           16.0,
-                          -24.0-time);
+                          -24.0-CAMERA_SPEED*time);
     vec3 light2Intensity = vec3(0.8, 0.8, 0.8);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
@@ -365,8 +366,8 @@ vec4 colorForFrag(vec2 fragCoord)
 {
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), fragCoord);
     // moving camera postion in z direction with time:
-	vec3 eye = vec3(-0.25, 6.0, 15.0-time);
-	vec3 target = vec3(-0.25, 3.0, -time);
+	vec3 eye = vec3(-0.25, 6.0, 15.0-CAMERA_SPEED*time);
+	vec3 target = vec3(-0.25, 3.0, -CAMERA_SPEED*time);
     
     mat4 viewToWorld = viewMatrix(eye, target, vec3(0.0, 1.0, 0.0));
     
