@@ -10,6 +10,7 @@ const float MIN_DIST = 0.0;
 const float MAX_DIST = 80.0;
 const float EPSILON = 0.0001; // Threshold for seeing if you hit an object
 const float CAMERA_SPEED = 5.0;
+const float PI = 3.1415926;
 uniform float time;
 uniform float windowHeight;
 uniform float windowWidth;
@@ -311,7 +312,7 @@ vec3 shade(vec3 p, vec3 eye)
 	// moon hit
 	if (hitMoon) {
 		K_a = vec3(1.0, 1.0, 1.0);
-		K_d = vec3(1.0, 1.0, sin(time/4) > 0 ? 1.0 : 0.0); // white & yellow
+		K_d = vec3(1.0, 1.0, -sin(time/8 - PI/4) > 0 ? 1.0 : 0.0); // white & yellow
 		K_s = vec3(0.0, 0.0, 0.0);
 	}
 
