@@ -122,23 +122,23 @@ float sceneSDF(vec3 samplePoint) {
 
 	// Calculate distance to each object
 	float groundDist = groundSDF(samplePoint);
-	float objectDist = multiCityBlockSDF(samplePoint);
+	float buildingDist = multiCityBlockSDF(samplePoint);
 	vec3 moonCenter = vec3(10.0, 20.0, -30.0-CAMERA_SPEED*time);
 	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
 	
 	// Check if ground is closest
-	if (groundDist < objectDist && groundDist < moonDist) {
+	if (groundDist < buildingDist && groundDist < moonDist) {
 		hitGround = true;
 		return groundDist;
 	}
 	// Check if moon is hit
-	else if (moonDist < groundDist && moonDist < objectDist) {
+	else if (moonDist < groundDist && moonDist < buildingDist) {
 		hitMoon = true;
 		return moonDist;
 	}
 	// Otherwise building was hit
 	else {
-		return objectDist;
+		return buildingDist;
 	}
 }
 
