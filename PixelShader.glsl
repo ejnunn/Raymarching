@@ -7,7 +7,7 @@
 #version 130
 const int MAX_MARCHING_STEPS = 255;
 const float MIN_DIST = 0.0;
-const float MAX_DIST = 100.0;
+const float MAX_DIST = 80.0;
 const float EPSILON = 0.0001; // Threshold for seeing if you hit an object
 const float CAMERA_SPEED = 5.0;
 uniform float time;
@@ -123,8 +123,8 @@ float sceneSDF(vec3 samplePoint) {
 	// Calculate distance to each object
 	float groundDist = groundSDF(samplePoint);
 	float buildingDist = multiCityBlockSDF(samplePoint);
-	vec3 moonCenter = vec3(10.0, 20.0, -30.0-CAMERA_SPEED*time);
-	float moonDist = sphereSDF(samplePoint, 5, moonCenter);
+	vec3 moonCenter = vec3(50.0*sin(time/4), 20.0*cos(time/4), -50.0-CAMERA_SPEED*time);
+	float moonDist = sphereSDF(samplePoint, 8, moonCenter);
 	
 	// Check if ground is closest
 	if (groundDist < buildingDist && groundDist < moonDist) {
@@ -259,9 +259,9 @@ vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 e
                                   light1Intensity);
 	
 	// moon light
-	vec3 light2Pos = vec3(4.0,
-                          16.0,
-                          -24.0-CAMERA_SPEED*time);
+	vec3 light2Pos = vec3(8.0*sin(time/16),
+                          17.0*cos(time/16),
+                          -18.0-CAMERA_SPEED*time);
     vec3 light2Intensity = vec3(0.8, 0.8, 0.8);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
@@ -310,9 +310,9 @@ vec3 shade(vec3 p, vec3 eye)
 
 	// moon hit
 	if (hitMoon) {
-		K_a = vec3(0.5, 0.5, 0.5);
-		K_d = vec3(1.0, 1.0, 1.0); // white
-		K_s = vec3(0.2, 0.2, 0.2);
+		K_a = vec3(1.0, 1.0, 1.0);
+		K_d = vec3(1.0, 1.0, sin(time/4) > 0 ? 1.0 : 0.0); // white & yellow
+		K_s = vec3(0.0, 0.0, 0.0);
 	}
 
     return phongIllumination(K_a, K_d, K_s, shininess, p, eye);
@@ -337,7 +337,7 @@ vec4 colorForFrag(vec2 fragCoord)
     if (dist > MAX_DIST - EPSILON) {
         // Didn't hit anything
 		// sky
-        return vec4(0.0, 0.0, 0.2, 0.3); // blue
+        return vec4(0.0, 0.0, 0.4*cos((time)/8), 0.5*cos((time))/8); // blue
     }
     
     // The closest point on the surface to the eyepoint along the view ray
