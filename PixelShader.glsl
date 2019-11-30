@@ -25,7 +25,7 @@ bool hitMoon;
  }
 
 /**
- * Signed distance function for a cube centered at "center""
+ * Signed distance function for a cube centered at "center"
  * with custom radii for length, width and height (added to "dims").
  */
 float cubeSDF(vec3 p, vec3 dims, vec3 center) {
@@ -295,7 +295,7 @@ mat4 viewMatrix(vec3 eye, vec3 center, vec3 up) {
  */
 vec3 shade(vec3 p, vec3 eye)
 {
-	// object hit - default
+	// building hit - default
 	vec3 K_a = vec3(0.2, 0.2, 0.2);
 	vec3 K_d = vec3(0.7, 0.2, 0.2); // red
 	vec3 K_s = vec3(1.0, 1.0, 1.0);
@@ -323,12 +323,14 @@ vec3 shade(vec3 p, vec3 eye)
  */
 vec4 colorForFrag(vec2 fragCoord) 
 {
+	// Field of view, window size, frag coordinate being calculated
 	vec3 viewDir = rayDirection(120.0, vec2(windowWidth, windowHeight), fragCoord);
-    // moving camera postion in z direction with time:
+    
+	// moving camera postion in z direction with time:
 	vec3 eye = vec3(-0.25, clamp(0.5*time, 2, 6), 15.0-CAMERA_SPEED*time);
 	vec3 target = vec3(-0.25, 3.0, -CAMERA_SPEED*time);
-    
-    mat4 viewToWorld = viewMatrix(eye, target, vec3(0.0, 1.0, 0.0));
+    vec3 upDir = vec3(0.0, 1.0, 0.0);
+    mat4 viewToWorld = viewMatrix(eye, target, upDir);
     
     vec3 worldDir = (viewToWorld * vec4(viewDir, 0.0)).xyz;
     
@@ -346,7 +348,9 @@ vec4 colorForFrag(vec2 fragCoord)
 	return vec4(shade(p, eye), 1.0);
 }
 
-// Main function. Gets and sets the color of the current point in space. 
+/**
+ * Main function. Gets and sets the color of the current point in space. 
+ */
 void main()
 {
 	vec4 color = colorForFrag(gl_FragCoord.xy);
